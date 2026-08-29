@@ -9,7 +9,7 @@ const siteService = {
       formData.append('files', f, relPath)
     })
     return axiosClient.post('/api/v1/sites/deploy/folder', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
     })
   },
   deployGithub(githubUrl) {
