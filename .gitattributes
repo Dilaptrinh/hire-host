@@ -1,0 +1,3 @@
+﻿# Mark vendor/AI directories as generated - exclude from language stats
+.kilocode/** linguist-generated=true
+.kilo/** linguist-generated=true

@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+
+  # 1. DATABASE: MySQL 8.0
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: web_rental_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-your-mysql-root-password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-web_rental}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - web_rental_net
+
+
+  # 2. BACKEND: Spring Boot Java 17
+
+  backend:
+    build:
+      context: ./web-rental
+      dockerfile: Dockerfile
+    container_name: web_rental_backend
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      # Cấu hình Kết nối MySQL
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+      # Domain System Config
+      APP_BASE_URL: ${APP_BASE_URL:-https://hosting.duycode.id.vn}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://hosting.duycode.id.vn}
+      APP_BASE_DOMAIN: ${APP_BASE_DOMAIN:-hosting.duycode.id.vn}
+
+      # Security & Admin Config
+      JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-here-must-be-at-least-256-bits-long}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-superadmin@web-rental.com}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-SuperAdmin@123}
+
+      # Google OAuth2 Credentials
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+
+      # MoMo Payment Sandbox Credentials
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
+
+      # Static Site Hosting
+      SITE_ROOT_PATH: /srv/hosted-sites
+    volumes:
+      - hosted_sites:/srv/hosted-sites
+    depends_on:
+      - mysql-db
+    networks:
+      - web_rental_net
+
+
+  # 3. FRONTEND: React + Nginx
+
+  frontend:
+    build:
+      context: ./my-react-app
+      dockerfile: Dockerfile
+    container_name: web_rental_frontend
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - hosted_sites:/srv/hosted-sites:ro
+    depends_on:
+      - backend
+    networks:
+      - web_rental_net
+
+# -------------------------------------------------------------
+# VOLUMES & NETWORKS
+# -------------------------------------------------------------
+volumes:
+  mysql_data:
+  hosted_sites:
+
+networks:
+  web_rental_net:
+    driver: bridge

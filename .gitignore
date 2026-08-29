@@ -1,0 +1,46 @@
+# === ENVIRONMENT FILES ===
+.env
+.env.local
+*.env
+
+# === BUILD OUTPUT ===
+**/target/
+**/node_modules/
+**/dist/
+**/build/
+
+# === LOGS ===
+*.log
+
+# === OS FILES ===
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# === IDE / EDITOR ===
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+
+# === AI / KILO CONFIG ===
+.kilo/
+.kilocode/
+.opencode/
+
+# === JAVA / MAVEN ===
+*.jar
+*.war
+*.ear
+.mvn/wrapper/maven-wrapper.jar
+
+# === REACT / VITE ===
+my-react-app/dist/
