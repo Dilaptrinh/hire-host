@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button, Card, Col, Form, Input, Row, Tabs, Upload, Grid, Typography, message, Space, Divider, Alert } from "antd";
 import { GithubOutlined, InboxOutlined, FolderOutlined, FileOutlined, CheckCircleOutlined, LinkOutlined } from "@ant-design/icons";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAuth } from "../contexts/AuthContext";
 import siteService from "../api/siteService";
 
 const { Title, Text, Paragraph } = Typography;
@@ -12,6 +14,8 @@ export default function UploadProject () {
    const screens = useBreakpoint()
    const isMobile = !screens.md
    const { isDark } = useTheme()
+   const { isAuthenticated } = useAuth()
+   const navigate = useNavigate()
    const [messageApi, contextHolder] = message.useMessage();
 
    const [folderFiles, setFolderFiles] = useState([])
@@ -19,7 +23,17 @@ export default function UploadProject () {
    const [result, setResult] = useState(null)
    const [githubForm] = Form.useForm()
 
+   const requireLogin = () => {
+      if (!isAuthenticated) {
+         messageApi.warning('Vui lòng đăng nhập trước khi deploy');
+         navigate('/login')
+         return false
+      }
+      return true
+   }
+
    useEffect(() => {
+      if (!isAuthenticated) return
       const loadMySite = async () => {
          try {
             const res = await siteService.getMySite()
@@ -31,9 +45,10 @@ export default function UploadProject () {
          }
       }
       loadMySite()
-   }, [])
+   }, [isAuthenticated])
 
    const handleFolderSubmit = async () => {
+      if (!requireLogin()) return
       if (!folderFiles.length) {
          messageApi.warning('Vui lòng chọn thư mục trước');
          return;
@@ -51,6 +66,7 @@ export default function UploadProject () {
    }
 
    const handleGithubSubmit = async (values) => {
+      if (!requireLogin()) return
       setLoading(true)
       try {
          const res = await siteService.deployGithub(values.githubUrl)
