@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button, Card, Col, Form, Input, Row, Tabs, Upload, Grid, Typography, message, Space, Divider, Alert } from "antd";
 import { GithubOutlined, InboxOutlined, FolderOutlined, FileOutlined, CheckCircleOutlined, LinkOutlined } from "@ant-design/icons";
 import { useTheme } from "../contexts/ThemeContext";
@@ -18,6 +18,20 @@ export default function UploadProject () {
    const [loading, setLoading] = useState(false)
    const [result, setResult] = useState(null)
    const [githubForm] = Form.useForm()
+
+   useEffect(() => {
+      const loadMySite = async () => {
+         try {
+            const res = await siteService.getMySite()
+            if (res.data.data) {
+               setResult(res.data.data)
+            }
+         } catch (err) {
+            // chưa có site thì bỏ qua
+         }
+      }
+      loadMySite()
+   }, [])
 
    const handleFolderSubmit = async () => {
       if (!folderFiles.length) {

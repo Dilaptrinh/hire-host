@@ -61,6 +61,12 @@ public class SiteStorageService {
         return "https://" + subdomain + "." + config.getBaseDomain();
     }
 
+    private Path createStaging(String prefix) throws IOException {
+        Path webRoot = Paths.get(config.getRootPath());
+        Files.createDirectories(webRoot);
+        return Files.createTempDirectory(webRoot, prefix);
+    }
+
     public void deployFromFolder(String subdomain, List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             throw new BadRequestException("No files uploaded");
@@ -71,7 +77,7 @@ public class SiteStorageService {
         }
         Path staging = null;
         try {
-            staging = Files.createTempDirectory("site-" + subdomain);
+            staging = createStaging("site-" + subdomain);
             for (MultipartFile file : files) {
                 writeFile(staging, file.getOriginalFilename(), file.getInputStream());
             }
@@ -86,7 +92,7 @@ public class SiteStorageService {
     public void deployFromGitHub(String subdomain, Path cloneDir) {
         Path staging = null;
         try {
-            staging = Files.createTempDirectory("site-gh-" + subdomain);
+            staging = createStaging("site-gh-" + subdomain);
             long copied = copyTree(cloneDir, staging, 0L);
             if (copied > config.getMaxSizeBytes()) {
                 throw new BadRequestException("GitHub repository size exceeds limit of "
