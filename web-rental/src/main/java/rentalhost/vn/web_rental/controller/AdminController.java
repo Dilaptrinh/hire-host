@@ -97,11 +97,12 @@ public class AdminController {
         return ApiResponse.success(paymentService.getAll(pageable));
     }
 
-    @Operation(summary = "Get all users (paginated)")
+    @Operation(summary = "Get all users (paginated, optional email search)")
     @GetMapping("/users")
     public ApiResponse<Page<UserDTO.UserResponse>> getAllUsers(
-            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable) {
-        return ApiResponse.success(adminService.getAllUsers(pageable));
+            @RequestParam(required = false) String email,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ApiResponse.success(adminService.searchUsers(email, pageable));
     }
 
     @Operation(summary = "Get user by ID")

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Select, Modal } from 'antd'
-import { LockOutlined, UnlockOutlined, DeleteOutlined, CrownOutlined } from '@ant-design/icons'
+import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Select, Modal, Input } from 'antd'
+import { LockOutlined, UnlockOutlined, DeleteOutlined, CrownOutlined, SearchOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
@@ -13,6 +13,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
+  const [searchEmail, setSearchEmail] = useState('')
   const { isDark } = useTheme()
   const { user: currentUser, isSuperAdmin } = useAuth()
   const screens = useBreakpoint()
@@ -22,7 +23,7 @@ export default function AdminUsers() {
     (async () => {
       setLoading(true)
       try {
-        const res = await adminService.getAllUsers({ page, size: 10, sort: ['id,desc'] })
+        const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail })
         setUsers(res.data.data.content || [])
         setTotal(res.data.data.totalElements || 0)
       } catch {
@@ -31,14 +32,18 @@ export default function AdminUsers() {
         setLoading(false)
       }
     })()
-  }, [page])
+  }, [page, searchEmail])
+
+  const refresh = async () => {
+    const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail })
+    setUsers(res.data.data.content || [])
+  }
 
   const handleStatus = async (id, status) => {
     try {
       await adminService.changeUserStatus(id, status)
       message.success(status === 'ACTIVE' ? 'Đã kích hoạt người dùng' : 'Đã khóa người dùng')
-      const res = await adminService.getAllUsers({ page, size: 10, sort: ['id,desc'] })
-      setUsers(res.data.data.content || [])
+      await refresh()
     } catch (err) {
       message.error(err.response?.data?.message || 'Thao tác thất bại')
     }
@@ -48,8 +53,7 @@ export default function AdminUsers() {
     try {
       await adminService.changeUserRole(id, role)
       message.success('Đã thay đổi vai trò')
-      const res = await adminService.getAllUsers({ page, size: 10, sort: ['id,desc'] })
-      setUsers(res.data.data.content || [])
+      await refresh()
     } catch (err) {
       message.error(err.response?.data?.message || 'Thao tác thất bại')
     }
@@ -66,8 +70,7 @@ export default function AdminUsers() {
         try {
           await adminService.deleteUser(id)
           message.success('Đã xóa người dùng')
-          const res = await adminService.getAllUsers({ page, size: 10, sort: ['id,desc'] })
-          setUsers(res.data.data.content || [])
+          await refresh()
         } catch (err) {
           message.error(err.response?.data?.message || 'Xóa thất bại')
         }
@@ -129,6 +132,16 @@ export default function AdminUsers() {
       <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 16 }}>
         <CrownOutlined /> Quản lý người dùng
       </Title>
+      <Input.Search
+        allowClear
+        placeholder="Tìm theo email..."
+        prefix={<SearchOutlined />}
+        style={{ maxWidth: 360, marginBottom: 16 }}
+        onSearch={(value) => {
+          setSearchEmail(value.trim())
+          setPage(0)
+        }}
+      />
       <Table
         columns={columns}
         dataSource={users}

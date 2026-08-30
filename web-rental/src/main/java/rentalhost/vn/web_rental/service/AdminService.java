@@ -27,6 +27,14 @@ public class AdminService {
                 .map(userMapper::toResponse);
     }
 
+    public Page<UserDTO.UserResponse> searchUsers(String email, Pageable pageable) {
+        if (email == null || email.isBlank()) {
+            return getAllUsers(pageable);
+        }
+        return userRepository.findByEmailContainingIgnoreCase(email.trim(), pageable)
+                .map(userMapper::toResponse);
+    }
+
     public List<UserDTO.UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(userMapper::toResponse)

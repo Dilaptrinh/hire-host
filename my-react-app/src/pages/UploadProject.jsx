@@ -34,6 +34,7 @@ export default function UploadProject () {
    const [messageApi, contextHolder] = message.useMessage();
 
    const [folderFiles, setFolderFiles] = useState([])
+   const [showAllFiles, setShowAllFiles] = useState(false)
    const [loading, setLoading] = useState(false)
    const [result, setResult] = useState(null)
    const [githubForm] = Form.useForm()
@@ -163,6 +164,33 @@ export default function UploadProject () {
               </p>
             </Dragger>
           </Form.Item>
+          {folderFiles.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <Text type="secondary">Đã chọn {folderFiles.length} file:</Text>
+              <div style={{
+                background: isDark ? '#141414' : '#f6f8fa',
+                borderRadius: 8,
+                padding: '8px 12px',
+                marginTop: 4,
+                fontFamily: 'monospace',
+                fontSize: 12,
+                maxHeight: showAllFiles ? 240 : undefined,
+                overflowY: 'auto',
+              }}>
+                {(showAllFiles ? folderFiles : folderFiles.slice(0, 10))
+                  .map((f) => f.webkitRelativePath || f.name)
+                  .map((p) => <div key={p}>{p}</div>)}
+                {!showAllFiles && folderFiles.length > 10 && (
+                  <div>... và {folderFiles.length - 10} file khác</div>
+                )}
+              </div>
+              {folderFiles.length > 10 && (
+                <Button type="link" size="small" style={{ padding: 0, marginTop: 4 }} onClick={() => setShowAllFiles((v) => !v)}>
+                  {showAllFiles ? 'Thu gọn' : 'Xem chi tiết tất cả'}
+                </Button>
+              )}
+            </div>
+          )}
           <Button type="primary" onClick={handleFolderSubmit} loading={loading} icon={<FolderOutlined />}>Submit</Button>
         </Form>
       </Card>
