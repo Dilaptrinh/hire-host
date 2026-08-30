@@ -44,7 +44,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         refreshCookie.setHttpOnly(true);
         refreshCookie.setSecure(true);
         refreshCookie.setPath("/");
-        refreshCookie.setMaxAge(30 * 24 * 60 * 60);
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
         refreshCookie.setAttribute("SameSite", "Strict");
         response.addCookie(refreshCookie);
 
