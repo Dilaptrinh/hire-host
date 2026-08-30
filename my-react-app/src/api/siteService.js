@@ -5,8 +5,11 @@ const siteService = {
   deployFolder(files) {
     const formData = new FormData()
     files.forEach((f) => {
-      const relPath = f.webkitRelativePath || f.name
-      formData.append('files', f, relPath)
+      // Bỏ thư mục gốc (folder được chọn) để index.html về root của site
+      const raw = f.webkitRelativePath || f.name || ''
+      const parts = raw.replace(/\\/g, '/').split('/').filter(Boolean)
+      const relPath = f.webkitRelativePath && parts.length > 1 ? parts.slice(1).join('/') : parts.join('/')
+      formData.append('files', f, relPath || f.name)
     })
     return axiosClient.post('/api/v1/sites/deploy/folder', formData, {
       headers: { 'Content-Type': undefined },
