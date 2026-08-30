@@ -9,15 +9,16 @@ import {
   SendOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
+import contactService from '../api/contactService'
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
 const { useBreakpoint } = Grid
 
 const contactInfo = [
-  { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: '123 Nguyễn Huệ, Q.1, TP.HCM' },
-  { icon: <MailOutlined />, label: 'Email', value: 'support@hirehost.vn' },
-  { icon: <PhoneOutlined />, label: 'Hotline', value: '1900 1234 5678' },
+  { icon: <EnvironmentOutlined />, label: 'Địa chỉ', value: 'Đại học Cần Thơ' },
+  { icon: <MailOutlined />, label: 'Email', value: 'duyb2407571@student.ctu.edu.vn' },
+  { icon: <PhoneOutlined />, label: 'Hotline', value: '0335050252' },
   { icon: <ClockCircleOutlined />, label: 'Giờ làm việc', value: 'Thứ 2 - Thứ 7, 8:00 - 18:00' },
 ]
 
@@ -27,12 +28,16 @@ export default function Contact() {
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
-  const onFinish = () => {
+  const onFinish = async (values) => {
     setLoading(true)
-    setTimeout(() => {
+    try {
+      await contactService.sendContact(values)
       message.success('Cảm ơn bạn! Chúng tôi sẽ phản hồi trong thời gian sớm nhất.')
+    } catch {
+      message.error('Gửi tin nhắn thất bại, vui lòng thử lại.')
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
   return (
