@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Select, Modal, Input } from 'antd'
-import { LockOutlined, UnlockOutlined, DeleteOutlined, CrownOutlined, SearchOutlined } from '@ant-design/icons'
+import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Select, Modal, Input, Drawer, Descriptions, Empty, Divider } from 'antd'
+import { LockOutlined, UnlockOutlined, DeleteOutlined, CrownOutlined, SearchOutlined, LinkOutlined, ShoppingOutlined, GlobalOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useAuth } from '../../contexts/AuthContext'
 
-const { Title } = Typography
+const { Title, Text } = Typography
 const { useBreakpoint } = Grid
 
 export default function AdminUsers() {
@@ -14,6 +14,11 @@ export default function AdminUsers() {
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [searchEmail, setSearchEmail] = useState('')
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [userOrders, setUserOrders] = useState([])
+  const [userSites, setUserSites] = useState([])
+  const [detailLoading, setDetailLoading] = useState(false)
   const { isDark } = useTheme()
   const { user: currentUser, isSuperAdmin } = useAuth()
   const screens = useBreakpoint()
@@ -37,6 +42,26 @@ export default function AdminUsers() {
   const refresh = async () => {
     const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail })
     setUsers(res.data.data.content || [])
+  }
+
+  const openUserDetail = async (record) => {
+    setSelectedUser(record)
+    setDetailOpen(true)
+    setDetailLoading(true)
+    setUserOrders([])
+    setUserSites([])
+    try {
+      const [o, s] = await Promise.all([
+        adminService.getUserOrders(record.id, { page: 0, size: 20, sort: 'createdAt,desc' }),
+        adminService.getUserSites(record.id),
+      ])
+      setUserOrders(o.data.data.content || [])
+      setUserSites(s.data.data || [])
+    } catch {
+      message.error('Không thể tải chi tiết người dùng')
+    } finally {
+      setDetailLoading(false)
+    }
   }
 
   const handleStatus = async (id, status) => {
@@ -147,10 +172,94 @@ export default function AdminUsers() {
         dataSource={users}
         rowKey="id"
         loading={loading}
+        onRow={(record) => ({
+          onClick: () => openUserDetail(record),
+          style: { cursor: 'pointer' },
+        })}
         scroll={{ x: isMobile ? 700 : undefined }}
         size={isMobile ? 'small' : 'middle'}
         pagination={{ current: page + 1, total, pageSize: 10, onChange: (p) => setPage(p - 1) }}
       />
+      <Drawer
+        title={selectedUser ? `Chi tiết người dùng: ${selectedUser.email}` : ''}
+        width={isMobile ? '100%' : 720}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        loading={detailLoading}
+      >
+        {selectedUser && (
+          <>
+            <Descriptions
+              title={<Text strong><CrownOutlined /> Thông tin cá nhân</Text>}
+              column={isMobile ? 1 : 2}
+              size="small"
+              bordered
+            >
+              <Descriptions.Item label="ID">{selectedUser.id}</Descriptions.Item>
+              <Descriptions.Item label="Email">{selectedUser.email}</Descriptions.Item>
+              <Descriptions.Item label="Họ tên">{selectedUser.fullName || '--'}</Descriptions.Item>
+              <Descriptions.Item label="SĐT">{selectedUser.phone || '--'}</Descriptions.Item>
+              <Descriptions.Item label="Vai trò">
+                <Tag color={selectedUser.role === 'SUPER_ADMIN' ? 'gold' : selectedUser.role === 'ADMIN' ? 'blue' : 'default'}>
+                  {selectedUser.role}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <Tag color={selectedUser.status === 'ACTIVE' ? 'green' : 'red'}>{selectedUser.status}</Tag>
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider style={{ margin: '16px 0 8px' }} />
+            <Text strong><ShoppingOutlined /> Lịch sử mua hàng</Text>
+            {userOrders.length === 0 ? (
+              <Empty description="Chưa có đơn hàng" style={{ margin: '16px 0' }} />
+            ) : (
+              <Table
+                rowKey="id"
+                size="small"
+                style={{ marginTop: 8 }}
+                dataSource={userOrders}
+                pagination={false}
+                scroll={{ x: 520 }}
+                columns={[
+                  { title: 'Mã đơn', dataIndex: 'id', width: 70 },
+                  { title: 'Gói', dataIndex: 'serverName', render: (v) => v || '--' },
+                  { title: 'Tổng tiền', dataIndex: 'totalPrice', render: (v) => `${Number(v || 0).toLocaleString('vi-VN')} đ` },
+                  {
+                    title: 'Trạng thái', dataIndex: 'status',
+                    render: (v) => <Tag color={v === 'ACTIVE' ? 'green' : v === 'PENDING' ? 'orange' : 'default'}>{v}</Tag>,
+                  },
+                  { title: 'Ngày', dataIndex: 'startDate', render: (v) => v || '--' },
+                ]}
+              />
+            )}
+
+            <Divider style={{ margin: '16px 0 8px' }} />
+            <Text strong><GlobalOutlined /> Website đã deploy</Text>
+            {userSites.length === 0 ? (
+              <Empty description="Chưa deploy website" style={{ margin: '16px 0' }} />
+            ) : (
+              <div style={{ marginTop: 8 }}>
+                {userSites.map((s) => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <Space>
+                      <Text code>{s.subdomain}</Text>
+                      <Tag color={s.status === 'ACTIVE' ? 'green' : s.status === 'FAILED' ? 'red' : 'orange'}>{s.status}</Tag>
+                    </Space>
+                    {s.status === 'ACTIVE' && s.url ? (
+                      <a href={s.url} target="_blank" rel="noopener noreferrer">
+                        <LinkOutlined /> {s.url}
+                      </a>
+                    ) : (
+                      <Text type="secondary">{s.errorMessage || '--'}</Text>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </Drawer>
     </div>
   )
 }

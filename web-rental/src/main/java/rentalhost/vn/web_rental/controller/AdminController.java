@@ -111,6 +111,14 @@ public class AdminController {
         return ApiResponse.success(adminService.getUserById(id));
     }
 
+    @Operation(summary = "Get orders of a specific user (admin)")
+    @GetMapping("/users/{id}/orders")
+    public ApiResponse<Page<OrderDTO.OrderResponse>> getUserOrders(
+            @PathVariable Long id,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ApiResponse.success(orderService.getByUser(id, pageable));
+    }
+
     @Operation(summary = "Change user role (Super Admin only)")
     @PutMapping("/users/{id}/role")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
