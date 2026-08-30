@@ -21,6 +21,7 @@ import {
   TeamOutlined,
   SettingOutlined,
   CloudUploadOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -81,6 +82,7 @@ export default function AppLayout() {
         { key: '/admin/categories', icon: <AppstoreOutlined />, label: 'Danh mục' },
         { key: '/admin/orders', icon: <ShoppingCartOutlined />, label: 'Đơn hàng' },
         { key: '/admin/payments', icon: <DollarOutlined />, label: 'Thanh toán' },
+        { key: '/admin/announcements', icon: <NotificationOutlined />, label: 'Thông báo' },
       ]
       : []),
   ]

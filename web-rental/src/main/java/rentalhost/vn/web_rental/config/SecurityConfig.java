@@ -46,6 +46,7 @@ public class SecurityConfig {
                 // Public
                 .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
                 .requestMatchers("/api/v1/contact").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/announcements").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/servers/**", "/api/v1/categories/**").permitAll()
 
                 // MoMo IPN (public)
@@ -60,6 +61,7 @@ public class SecurityConfig {
 
                 // Admin sites
                 .requestMatchers("/api/v1/admin/sites/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                .requestMatchers("/api/v1/admin/announcements/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                 // Admin
                 .requestMatchers("/api/v1/admin/servers/**", "/api/v1/admin/categories/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
