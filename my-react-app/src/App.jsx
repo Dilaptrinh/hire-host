@@ -26,8 +26,9 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/hosting" element={<Hosting />} />
+        <Route path="/" element={<Hosting />} />
+        <Route path="/hosting" element={<Navigate to="/" replace />} />
+        <Route path="/info" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/order/:planName" element={<OrderConfirm />} />

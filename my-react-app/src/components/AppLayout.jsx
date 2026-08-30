@@ -31,7 +31,7 @@ const { useBreakpoint } = Grid
 
 const publicMenuItems = [
   { key: '/', icon: <HomeOutlined />, label: 'Trang chủ' },
-  { key: '/hosting', icon: <CloudServerOutlined />, label: 'Gói Hosting' },
+  { key: '/info', icon: <ProfileOutlined />, label: 'Thông tin' },
   { key: '/about', icon: <InfoCircleOutlined />, label: 'Giới thiệu' },
   { key: '/contact', icon: <PhoneOutlined />, label: 'Liên hệ' },
   { key: '/deployment', icon: <CloudUploadOutlined/>, label: 'Triển khai web tĩnh'}
@@ -57,7 +57,7 @@ export default function AppLayout() {
     const path = location.pathname
     if (path.startsWith('/admin')) return '/admin'
     if (path.startsWith('/dashboard')) return '/dashboard'
-    if (path.startsWith('/order')) return '/hosting'
+    if (path.startsWith('/order')) return '/'
     if (path.startsWith('/payment')) return '/dashboard'
     if (path.startsWith('/order-detail')) return '/dashboard'
     return path
