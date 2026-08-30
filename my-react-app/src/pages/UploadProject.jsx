@@ -10,6 +10,21 @@ const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 const { Dragger } = Upload;
 
+const ALLOWED_EXT = new Set([
+  'html','htm','css','js','mjs','json','txt','md','xml','svg','png','jpg','jpeg','gif','ico','webp','avif','bmp','pdf','woff','woff2','ttf','otf','eot','map','webmanifest',
+]);
+const IGNORE_PART = ['.git', 'node_modules', '.idea', '.vscode', '.DS_Store', 'Thumbs.db', 'package-lock.json', 'yarn.lock'];
+
+function isAllowedStaticFile(file) {
+  const rel = (file.webkitRelativePath || file.name || '').replace(/\\/g, '/');
+  if (!rel) return false;
+  if (IGNORE_PART.some((p) => rel.split('/').includes(p))) return false;
+  const dot = rel.lastIndexOf('.');
+  if (dot < 0) return false;
+  const ext = rel.slice(dot + 1).toLowerCase();
+  return ALLOWED_EXT.has(ext);
+}
+
 export default function UploadProject () {
    const screens = useBreakpoint()
    const isMobile = !screens.md
@@ -85,7 +100,7 @@ export default function UploadProject () {
       directory: true,
       beforeUpload: () => false,
       onChange(info) {
-         const files = info.fileList.map((f) => f.originFileObj).filter(Boolean);
+         const files = info.fileList.map((f) => f.originFileObj).filter(Boolean).filter(isAllowedStaticFile);
          setFolderFiles(files);
          messageApi.success(`Đã chọn ${files.length} file trong thư mục`);
       },
