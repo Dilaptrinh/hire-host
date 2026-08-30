@@ -1,5 +1,6 @@
 package rentalhost.vn.web_rental.config;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +40,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         AuthDTO.AuthResponse authResponse = authService.processOAuthUser(email, name, avatar, googleId);
 
+        Cookie refreshCookie = new Cookie("refreshToken", authResponse.getRefreshToken());
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setSecure(true);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(30 * 24 * 60 * 60);
+        refreshCookie.setAttribute("SameSite", "Strict");
+        response.addCookie(refreshCookie);
+
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("accessToken", authResponse.getAccessToken())
-                .queryParam("refreshToken", authResponse.getRefreshToken())
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

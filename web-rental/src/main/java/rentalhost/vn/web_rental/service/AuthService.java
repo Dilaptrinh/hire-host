@@ -66,7 +66,15 @@ public class AuthService {
 
     @Transactional
     public AuthDTO.AuthResponse refresh(AuthDTO.RefreshTokenRequest request) {
-        RefreshToken storedToken = refreshTokenRepository.findByToken(request.getRefreshToken())
+        return refreshToken(request.getRefreshToken());
+    }
+
+    @Transactional
+    public AuthDTO.AuthResponse refreshToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new UnauthorizedException("Invalid refresh token");
+        }
+        RefreshToken storedToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
 
         if (storedToken.isExpired()) {

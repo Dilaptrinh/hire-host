@@ -1,7 +1,7 @@
 ﻿import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { Spin, Typography, Grid } from "antd"
-import { setAccessToken, setRefreshToken } from "../api/tokenStorage"
+import { setAccessToken } from "../api/tokenStorage"
 import userService from "../api/userService"
 import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
@@ -23,7 +23,6 @@ export default function OAuth2Callback() {
 
     const params = new URLSearchParams(window.location.search)
     const accessToken = params.get("accessToken")
-    const refreshToken = params.get("refreshToken")
 
     if (!accessToken) {
       navigate("/login?error=oauth2_failed", { replace: true })
@@ -33,7 +32,6 @@ export default function OAuth2Callback() {
     const completeLogin = async () => {
       try {
         setAccessToken(accessToken)
-        if (refreshToken) setRefreshToken(refreshToken)
 
         const profileRes = await userService.getProfile()
         const userData = profileRes.data.data

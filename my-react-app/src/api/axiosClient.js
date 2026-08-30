@@ -2,8 +2,6 @@ import axios from 'axios'
 import {
   getAccessToken,
   setAccessToken,
-  getRefreshToken,
-  setRefreshToken,
   clearAccessToken,
   clearRefreshToken,
 } from './tokenStorage'
@@ -53,21 +51,11 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true
       isRefreshing = true
 
-      const refreshToken = getRefreshToken()
-      if (!refreshToken) {
-        clearAccessToken()
-        clearRefreshToken()
-        window.location.href = '/login'
-        return Promise.reject(error)
-      }
-
       try {
-        const res = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, { refreshToken })
+        // Refresh token nằm trong cookie HttpOnly -> gửi tự động, không cần gửi trong body
+        const res = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {}, { withCredentials: true })
         const auth = res.data.data
         setAccessToken(auth.accessToken)
-        if (auth.refreshToken) {
-          setRefreshToken(auth.refreshToken)
-        }
         processQueue(null, auth.accessToken)
         originalRequest.headers.Authorization = `Bearer ${auth.accessToken}`
         return axiosClient(originalRequest)
