@@ -1,5 +1,7 @@
 package rentalhost.vn.web_rental.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,6 +17,7 @@ import rentalhost.vn.web_rental.enums.ServerStatus;
 import rentalhost.vn.web_rental.exception.BadRequestException;
 import rentalhost.vn.web_rental.exception.ResourceNotFoundException;
 import rentalhost.vn.web_rental.gateway.MoMoPaymentGateway;
+import rentalhost.vn.web_rental.gateway.PayOSPaymentGateway;
 import rentalhost.vn.web_rental.mapper.PaymentMapper;
 import rentalhost.vn.web_rental.model.Order;
 import rentalhost.vn.web_rental.model.Payment;
@@ -37,6 +40,7 @@ public class PaymentService {
     private final ServerRepository serverRepository;
     private final PaymentMapper paymentMapper;
     private final MoMoPaymentGateway moMoPaymentGateway;
+    private final PayOSPaymentGateway payOSPaymentGateway;
     private final PaymentConfig paymentConfig;
 
     @Transactional
@@ -61,6 +65,10 @@ public class PaymentService {
 
         if (method == PaymentMethod.MOMO) {
             return createMoMoPayment(order, request);
+        }
+
+        if (method == PaymentMethod.PAYOS) {
+            return createPayOSPayment(order, request);
         }
 
         Payment payment = Payment.builder()
@@ -122,6 +130,89 @@ public class PaymentService {
         PaymentDTO.PaymentResponse response = paymentMapper.toResponse(payment);
         response.setPaymentUrl(momoResponse.getPayUrl());
         return response;
+    }
+
+    @Transactional
+    protected PaymentDTO.PaymentResponse createPayOSPayment(Order order, PaymentDTO.PaymentRequest request) {
+        PaymentConfig.PayOSConfig config = paymentConfig.getPayos();
+        long amount = request.getAmount().longValue();
+        long orderCode = 1000000000000L + Math.abs(UUID.randomUUID().hashCode());
+        String description = "Thanh toan thue server #" + order.getId();
+
+        PayOSPaymentGateway.PayOSData payosData = payOSPaymentGateway.createPayment(
+                orderCode, amount, description, config.getReturnUrl(), config.getCancelUrl());
+
+        Payment payment = Payment.builder()
+                .order(order)
+                .amount(request.getAmount())
+                .method(PaymentMethod.PAYOS)
+                .status(PaymentStatus.PENDING)
+                .transactionId(payosData.getOrderCode() != null
+                        ? String.valueOf(payosData.getOrderCode())
+                        : String.valueOf(orderCode))
+                .requestId(payosData.getId() != null ? payosData.getId() : UUID.randomUUID().toString())
+                .paymentUrl(payosData.getCheckoutUrl())
+                .gateway("PAYOS")
+                .orderInfo(description)
+                .build();
+        payment = paymentRepository.save(payment);
+
+        PaymentDTO.PaymentResponse response = paymentMapper.toResponse(payment);
+        response.setPaymentUrl(payosData.getCheckoutUrl());
+        return response;
+    }
+
+    @Transactional
+    public String handlePayOSWebhook(String rawBody, String signature) {
+        log.info("PayOS webhook received");
+        if (!payOSPaymentGateway.verifyWebhook(rawBody, signature)) {
+            log.warn("Invalid PayOS webhook signature");
+            return "{\"error\":\"Invalid signature\"}";
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(rawBody);
+            String code = node.path("code").asText("");
+            JsonNode data = node.path("data");
+            String orderCode = data.path("orderCode").asText("");
+            String status = data.path("status").asText("");
+            String transactionId = data.path("transactionId").asText(null);
+
+            Payment payment = paymentRepository.findByTransactionId(orderCode).orElse(null);
+            if (payment == null) {
+                log.warn("PayOS payment not found for orderCode: {}", orderCode);
+                return "{\"error\":\"Not found\"}";
+            }
+            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+                return "{\"success\":true}";
+            }
+            if ("00".equals(code) && "PAID".equals(status)) {
+                payment.setStatus(PaymentStatus.SUCCESS);
+                if (transactionId != null && !transactionId.isBlank()) {
+                    payment.setTransactionId(transactionId);
+                }
+                payment.setPaidAt(LocalDateTime.now());
+                paymentRepository.save(payment);
+                activateOrder(payment.getOrder());
+                log.info("PayOS payment SUCCESS orderCode: {}", orderCode);
+            } else {
+                payment.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(payment);
+                log.info("PayOS payment FAILED orderCode: {}", orderCode);
+            }
+            return "{\"success\":true}";
+        } catch (Exception e) {
+            log.error("PayOS webhook parse error", e);
+            return "{\"error\":\"Invalid data\"}";
+        }
+    }
+
+    private void activateOrder(Order order) {
+        order.setStatus(OrderStatus.ACTIVE);
+        orderRepository.save(order);
+        var server = order.getServer();
+        server.setStatus(ServerStatus.RENTED);
+        serverRepository.save(server);
     }
 
     @Transactional

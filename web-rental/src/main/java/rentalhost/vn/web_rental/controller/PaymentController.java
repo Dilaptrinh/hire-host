@@ -58,5 +58,23 @@ public class PaymentController {
         result.put("message", params.getOrDefault("message", ""));
         return ApiResponse.success(result);
     }
+
+    @Operation(summary = "PayOS webhook (public)")
+    @PostMapping("/payos/webhook")
+    public String payosWebhook(@RequestBody String rawBody,
+                               @RequestHeader(value = "x-payos-signature", required = false) String signature) {
+        return paymentService.handlePayOSWebhook(rawBody, signature);
+    }
+
+    @Operation(summary = "PayOS callback redirect (public)")
+    @GetMapping("/payos/callback")
+    public ApiResponse<Map<String, String>> payosCallback(@RequestParam Map<String, String> params) {
+        log.info("PayOS callback: {}", params);
+        Map<String, String> result = new HashMap<>();
+        String status = params.getOrDefault("status", "");
+        result.put("status", "PAID".equalsIgnoreCase(status) ? "SUCCESS" : "FAILED");
+        result.put("code", params.getOrDefault("code", ""));
+        return ApiResponse.success(result);
+    }
 }
 

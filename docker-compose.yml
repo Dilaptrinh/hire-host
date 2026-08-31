@@ -54,6 +54,11 @@ services:
       MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY}
       MOMO_SECRET_KEY: ${MOMO_SECRET_KEY}
 
+      # PayOS Credentials
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID}
+      PAYOS_API_KEY: ${PAYOS_API_KEY}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY}
+
       # Static Site Hosting
       SITE_ROOT_PATH: /srv/hosted-sites
     volumes:

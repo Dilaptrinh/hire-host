@@ -30,7 +30,11 @@ export default function PaymentCallback() {
     const resultCode = params.get('resultCode')
     const msg = params.get('message') || ''
 
-    if (resultCode === '0') {
+    // PayOS trả về status=PAID / code=00
+    const payosStatus = params.get('status')
+    const payosCode = params.get('code')
+
+    if (resultCode === '0' || payosStatus === 'PAID' || payosCode === '00') {
       setStatus('success')
       setMessage(msg || 'Thanh toán thành công!')
     } else {
@@ -122,7 +126,7 @@ export default function PaymentCallback() {
             <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280' }}>{message}</Text>
             {polling && (
               <Text style={{ color: '#1677ff' }}>
-                <LoadingOutlined style={{ marginRight: 6 }} />Đang chờ xác nhận từ MoMo...
+                <LoadingOutlined style={{ marginRight: 6 }} />Đang chờ xác nhận thanh toán...
               </Text>
             )}
           </Space>

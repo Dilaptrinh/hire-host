@@ -12,6 +12,7 @@ const { useBreakpoint } = Grid
 const paymentMethods = [
   { value: 'BANKING', label: 'Chuyển khoản ngân hàng' },
   { value: 'MOMO', label: 'Ví MoMo' },
+  { value: 'PAYOS', label: 'PayOS' },
   { value: 'VNPAY', label: 'VNPay' },
   { value: 'CASH', label: 'Tiền mặt' },
 ]
@@ -56,7 +57,7 @@ export default function Payment() {
       const res = await paymentService.create(payload)
       const payment = res.data.data
 
-      if (payment.paymentUrl && (values.method === 'MOMO' || values.method === 'VNPAY')) {
+      if (payment.paymentUrl && ['MOMO', 'VNPAY', 'PAYOS'].includes(values.method)) {
         window.location.href = payment.paymentUrl
         return
       }

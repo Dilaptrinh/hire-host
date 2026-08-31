@@ -52,6 +52,9 @@ public class SecurityConfig {
                 // MoMo IPN (public)
                 .requestMatchers("/api/v1/payments/momo/**").permitAll()
 
+                // PayOS webhook/callback (public)
+                .requestMatchers("/api/v1/payments/payos/**").permitAll()
+
                 // User
                 .requestMatchers("/api/v1/auth/logout", "/api/v1/users/**").authenticated()
                 .requestMatchers("/api/v1/orders/**", "/api/v1/payments/**").authenticated()

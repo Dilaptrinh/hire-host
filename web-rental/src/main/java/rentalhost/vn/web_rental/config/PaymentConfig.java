@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class PaymentConfig {
 
     private MomoConfig momo = new MomoConfig();
+    private PayOSConfig payos = new PayOSConfig();
 
     @Getter @Setter
     public static class MomoConfig {
@@ -20,5 +21,16 @@ public class PaymentConfig {
         private String endpoint;
         private String notifyUrl;
         private String returnUrl;
+    }
+
+    @Getter @Setter
+    public static class PayOSConfig {
+        private String clientId;
+        private String apiKey;
+        private String checksumKey;
+        private String endpoint;
+        private String returnUrl;
+        private String cancelUrl;
+        private String webhookUrl;
     }
 }
