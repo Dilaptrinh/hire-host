@@ -30,7 +30,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Cáº¥u hÃ¬nh Káº¿t ná»‘i MySQL
+
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -86,9 +86,7 @@ services:
     networks:
       - web_rental_net
 
-# -------------------------------------------------------------
-# VOLUMES & NETWORKS
-# -------------------------------------------------------------
+
 volumes:
   mysql_data:
   hosted_sites:
