@@ -36,9 +36,9 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
 
       # Domain System Config
-      APP_BASE_URL: ${APP_BASE_URL:-https://hosting.duycode.id.vn}
-      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://hosting.duycode.id.vn}
-      APP_BASE_DOMAIN: ${APP_BASE_DOMAIN:-duycode.id.vn}
+      APP_BASE_URL: ${APP_BASE_URL:-https://hosting.bootnode.cloud}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://hosting.bootnode.cloud}
+      APP_BASE_DOMAIN: ${APP_BASE_DOMAIN:-bootnode.cloud}
 
       # Security & Admin Config
       JWT_SECRET: ${JWT_SECRET:-your-256-bit-secret-key-here-must-be-at-least-256-bits-long}

@@ -169,7 +169,7 @@ export default function UploadProject () {
             <Form.Item label="Subdomain (tên miền con)">
               <Input
                 placeholder="VD: mywebsite"
-                addonAfter=".duycode.id.vn"
+                addonAfter=".bootnode.cloud"
                 value={subdomain}
                 onChange={(e) => setSubdomain(e.target.value)}
                 style={isMobile ? { width: '100%' } : { width: '60%' }}
@@ -320,7 +320,7 @@ export default function UploadProject () {
               </Title>
               <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
                 {result?.subdomain
-                  ? `Tên miền hiện tại: ${result.subdomain}.duycode.id.vn`
+                  ? `Tên miền hiện tại: ${result.subdomain}.bootnode.cloud`
                   : 'Bạn chưa có website nào.'}
               </Text>
               <Space.Compact style={{ width: '100%' }}>
