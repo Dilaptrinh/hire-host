@@ -69,21 +69,30 @@ public class PayOSPaymentGateway {
             log.warn("PayOS webhook verify failed: body null/blank");
             return false;
         }
-        // Lấy signature từ trong body (PayOS gửi signature trong body, không phải header)
+        String checksumKey = paymentConfig.getPayos().getChecksumKey();
+        String keyMask = checksumKey != null && checksumKey.length() > 8
+                ? checksumKey.substring(0, 4) + "..." + checksumKey.substring(checksumKey.length() - 4)
+                : "(empty/short)";
+        log.info("PayOS checksumKeyMask={}", keyMask);
+
         String signature = extractSignature(rawBody);
         if (signature == null) {
             log.warn("PayOS webhook verify failed: no signature in body");
             return false;
         }
-        // PayOS ký trên body KHÔNG có field "signature" (field cuối cùng)
-        String signedBody = rawBody;
+
+        // Cách 1: body bỏ field signature
+        String stripped = rawBody;
         int idx = rawBody.lastIndexOf(",\"signature\":");
-        if (idx >= 0) {
-            signedBody = rawBody.substring(0, idx) + "}";
-        }
-        String expected = hmacSha256(signedBody, paymentConfig.getPayos().getChecksumKey());
-        boolean ok = expected.equals(signature);
-        log.info("PayOS webhook verify: receivedSig={} computedSig={} ok={}", signature, expected, ok);
+        if (idx >= 0) stripped = rawBody.substring(0, idx) + "}";
+        String hashStripped = hmacSha256(stripped, checksumKey);
+
+        // Cách 2: toàn bộ body
+        String hashFull = hmacSha256(rawBody, checksumKey);
+
+        boolean ok = signature.equals(hashStripped) || signature.equals(hashFull);
+        log.info("PayOS webhook verify: receivedSig={} hashStripped={} hashFull={} ok={}",
+                signature, hashStripped, hashFull, ok);
         return ok;
     }
 
