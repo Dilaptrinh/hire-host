@@ -32,13 +32,11 @@ export default function OrderConfirm() {
   const [paying, setPaying] = useState(false)
   const [orderResult, setOrderResult] = useState(null)
   const [totalPrice, setTotalPrice] = useState(0)
-  const [paymentMethod, setPaymentMethod] = useState('MOMO')
+  const [totalDays, setTotalDays] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState('PAYOS')
 
   const paymentMethods = [
-    { value: 'MOMO', label: 'Ví MoMo', icon: <WalletOutlined /> },
-    { value: 'VNPAY', label: 'VNPay', icon: <BankOutlined /> },
-    { value: 'BANKING', label: 'Chuyển khoản ngân hàng', icon: <BankOutlined /> },
-    { value: 'CASH', label: 'Tiền mặt', icon: <WalletOutlined /> },
+    { value: 'PAYOS', label: 'PayOS', icon: <WalletOutlined /> },
   ]
 
   const handlePay = async () => {
@@ -51,7 +49,7 @@ export default function OrderConfirm() {
         returnUrl: window.location.origin + '/payment/callback',
       })
       const payment = res.data.data
-      if (payment.paymentUrl && (paymentMethod === 'MOMO' || paymentMethod === 'VNPAY')) {
+      if (payment.paymentUrl) {
         window.location.href = payment.paymentUrl
         return
       }
@@ -75,10 +73,11 @@ export default function OrderConfirm() {
     if (start && end && server?.price) {
       const days = end.diff(start, 'day')
       if (days > 0) {
-        const months = Math.ceil(days / 30)
-        setTotalPrice(server.price * months)
+        setTotalDays(days)
+        setTotalPrice(server.price * days)
       } else {
-        setTotalPrice(server.price)
+        setTotalDays(0)
+        setTotalPrice(0)
       }
     }
   }
@@ -268,7 +267,7 @@ export default function OrderConfirm() {
             <Descriptions.Item label="Bandwidth">{server.bandwidth}</Descriptions.Item>
             <Descriptions.Item label="Giá">
               <Text strong style={{ fontSize: 16, color: '#1677ff' }}>
-                {formatPrice(server.price)}₫<Text style={{ fontSize: 13, color: '#8c8c8c' }}>/tháng</Text>
+                {formatPrice(server.price)}₫<Text style={{ fontSize: 13, color: '#8c8c8c' }}>/ngày</Text>
               </Text>
             </Descriptions.Item>
           </Descriptions>
@@ -320,7 +319,8 @@ export default function OrderConfirm() {
               marginBottom: 24,
               textAlign: 'center',
             }}>
-              <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 13 }}>Tạm tính: </Text>
+              <Text style={{ color: isDark ? '#8c8c8c' : '#6b7280', fontSize: 13 }}>
+                {totalDays} ngày × {formatPrice(server.price)}₫ = </Text>
               <Text strong style={{ fontSize: 24, color: '#1677ff' }}>{formatPrice(totalPrice)}₫</Text>
             </div>
           )}
