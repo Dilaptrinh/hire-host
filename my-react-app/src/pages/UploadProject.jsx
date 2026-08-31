@@ -37,6 +37,7 @@ export default function UploadProject () {
    const [showAllFiles, setShowAllFiles] = useState(false)
    const [loading, setLoading] = useState(false)
    const [result, setResult] = useState(null)
+   const [subdomain, setSubdomain] = useState('')
    const [githubForm] = Form.useForm()
 
    const requireLogin = () => {
@@ -71,7 +72,7 @@ export default function UploadProject () {
       }
       setLoading(true)
       try {
-         const res = await siteService.deployFolder(folderFiles)
+         const res = await siteService.deployFolder(folderFiles, subdomain)
          setResult(res.data.data)
          messageApi.success('Deploy thành công');
       } catch (err) {
@@ -85,7 +86,7 @@ export default function UploadProject () {
       if (!requireLogin()) return
       setLoading(true)
       try {
-         const res = await siteService.deployGithub(values.githubUrl)
+         const res = await siteService.deployGithub(values.githubUrl, subdomain)
          setResult(res.data.data)
          messageApi.success('Deploy thành công');
       } catch (err) {
@@ -144,6 +145,15 @@ export default function UploadProject () {
                >
                </Input>
             </Form.Item>
+            <Form.Item label="Subdomain (tên miền con)">
+              <Input
+                placeholder="VD: mywebsite"
+                addonAfter=".duycode.id.vn"
+                value={subdomain}
+                onChange={(e) => setSubdomain(e.target.value)}
+                style={isMobile ? { width: '100%' } : { width: '60%' }}
+              />
+            </Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} icon={<GithubOutlined />}>Submit</Button>
           </Form>
       </Card>
@@ -163,6 +173,15 @@ export default function UploadProject () {
                 Support for a single or bulk upload.
               </p>
             </Dragger>
+          </Form.Item>
+          <Form.Item label="Subdomain (tên miền con)">
+            <Input
+              placeholder="VD: mywebsite"
+              addonAfter=".duycode.id.vn"
+              value={subdomain}
+              onChange={(e) => setSubdomain(e.target.value)}
+              style={{ width: '100%' }}
+            />
           </Form.Item>
           {folderFiles.length > 0 && (
             <div style={{ marginBottom: 12 }}>

@@ -20,6 +20,10 @@ public class SiteDTO {
         @Schema(example = "https://github.com/username/repo")
         @Size(max = 500)
         private String githubUrl;
+
+        @Schema(example = "mywebsite", description = "Subdomain tự chọn (tùy chọn)")
+        @Size(max = 30)
+        private String subdomain;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder

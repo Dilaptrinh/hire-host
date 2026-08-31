@@ -26,9 +26,11 @@ public class SiteController {
     @Operation(summary = "Deploy static site from uploaded folder")
     @PostMapping(value = "/deploy/folder", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<SiteDTO.SiteResponse> deployFolder(
-            @RequestParam("files") MultipartFile[] files) {
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam(required = false) String subdomain) {
         return ApiResponse.created(siteService.deployFromFolder(
                 SecurityUtil.getCurrentUserId(),
+                subdomain,
                 files == null ? List.of() : Arrays.asList(files)));
     }
 
@@ -36,7 +38,7 @@ public class SiteController {
     @PostMapping("/deploy/github")
     public ApiResponse<SiteDTO.SiteResponse> deployGithub(@Valid @RequestBody SiteDTO.SiteRequest request) {
         return ApiResponse.created(siteService.deployFromGithub(
-                SecurityUtil.getCurrentUserId(), request.getGithubUrl()));
+                SecurityUtil.getCurrentUserId(), request.getSubdomain(), request.getGithubUrl()));
     }
 
     @Operation(summary = "Get current user's site")

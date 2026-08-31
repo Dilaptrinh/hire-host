@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import rentalhost.vn.web_rental.dto.SiteDTO;
 import rentalhost.vn.web_rental.enums.SiteSource;
 import rentalhost.vn.web_rental.enums.SiteStatus;
+import rentalhost.vn.web_rental.exception.BadRequestException;
 import rentalhost.vn.web_rental.exception.ResourceNotFoundException;
 import rentalhost.vn.web_rental.mapper.SiteMapper;
 import rentalhost.vn.web_rental.model.Site;
@@ -29,8 +30,8 @@ public class SiteService {
     private final GitHubCloneService gitHubCloneService;
 
     @Transactional
-    public SiteDTO.SiteResponse deployFromFolder(Long userId, List<MultipartFile> files) {
-        Site site = getOrCreateSite(userId);
+    public SiteDTO.SiteResponse deployFromFolder(Long userId, String subdomain, List<MultipartFile> files) {
+        Site site = getOrCreateSite(userId, subdomain);
         site.setStatus(SiteStatus.DEPLOYING);
         site.setSource(SiteSource.FOLDER);
         site.setGithubUrl(null);
@@ -49,8 +50,8 @@ public class SiteService {
     }
 
     @Transactional
-    public SiteDTO.SiteResponse deployFromGithub(Long userId, String githubUrl) {
-        Site site = getOrCreateSite(userId);
+    public SiteDTO.SiteResponse deployFromGithub(Long userId, String subdomain, String githubUrl) {
+        Site site = getOrCreateSite(userId, subdomain);
         site.setStatus(SiteStatus.DEPLOYING);
         site.setSource(SiteSource.GITHUB);
         site.setGithubUrl(githubUrl);
@@ -105,16 +106,35 @@ public class SiteService {
         siteRepository.delete(site);
     }
 
-    private Site getOrCreateSite(Long userId) {
-        return siteRepository.findByUserId(userId).orElseGet(() -> {
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User", userId));
-            return Site.builder()
-                    .user(user)
-                    .subdomain(storageService.createSubdomain())
-                    .source(SiteSource.FOLDER)
-                    .status(SiteStatus.DEPLOYING)
-                    .build();
-        });
+    private Site getOrCreateSite(Long userId, String requestedSub) {
+        String resolved = resolveSubdomain(userId, requestedSub);
+        Site existing = siteRepository.findByUserId(userId).orElse(null);
+        if (existing != null) {
+            existing.setSubdomain(resolved);
+            return existing;
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        return Site.builder()
+                .user(user)
+                .subdomain(resolved)
+                .source(SiteSource.FOLDER)
+                .status(SiteStatus.DEPLOYING)
+                .build();
+    }
+
+    private String resolveSubdomain(Long userId, String requested) {
+        String existing = siteRepository.findByUserId(userId).map(Site::getSubdomain).orElse(null);
+        if (requested == null || requested.isBlank()) {
+            return existing != null ? existing : storageService.createSubdomain();
+        }
+        String sub = requested.trim().toLowerCase();
+        if (!sub.matches("^[a-z0-9][a-z0-9-]{0,28}[a-z0-9]$")) {
+            throw new BadRequestException("Tên miền không hợp lệ (chỉ a-z, 0-9, dấu gạch ngang, 2-30 ký tự)");
+        }
+        if (!sub.equals(existing) && siteRepository.existsBySubdomain(sub)) {
+            throw new BadRequestException("Tên miền '" + sub + "' đã được sử dụng, vui lòng chọn tên khác");
+        }
+        return sub;
     }
 }
