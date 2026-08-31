@@ -62,8 +62,9 @@ public class PaymentController {
     @Operation(summary = "PayOS webhook (public)")
     @PostMapping("/payos/webhook")
     public String payosWebhook(@RequestBody String rawBody,
-                               @RequestHeader(value = "x-payos-signature", required = false) String signature) {
-        return paymentService.handlePayOSWebhook(rawBody, signature);
+                               @RequestHeader(value = "x-payos-signature", required = false) String headerSignature) {
+        log.info("PayOS webhook body: {}", rawBody);
+        return paymentService.handlePayOSWebhook(rawBody, headerSignature);
     }
 
     @Operation(summary = "PayOS callback redirect (public)")

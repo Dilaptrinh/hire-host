@@ -65,8 +65,14 @@ public class PayOSPaymentGateway {
     }
 
     public boolean verifyWebhook(String body, String signature) {
-        if (body == null || signature == null) return false;
-        return hmacSha256(body, paymentConfig.getPayos().getChecksumKey()).equals(signature);
+        if (body == null || signature == null || signature.isBlank()) {
+            log.warn("PayOS webhook verify failed: body or signature null/blank");
+            return false;
+        }
+        String expected = hmacSha256(body, paymentConfig.getPayos().getChecksumKey());
+        boolean ok = expected.equals(signature);
+        log.info("PayOS webhook verify: receivedSig={} computedSig={} ok={}", signature, expected, ok);
+        return ok;
     }
 
     private String hmacSha256(String data, String key) {
