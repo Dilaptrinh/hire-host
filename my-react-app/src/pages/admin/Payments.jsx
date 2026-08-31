@@ -7,7 +7,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 const { Title, Text } = Typography
 const { useBreakpoint } = Grid
 
-const methodLabels = { BANKING: 'Chuyển khoản', MOMO: 'MoMo', VNPAY: 'VNPay', CASH: 'Tiền mặt' }
+const methodLabels = { BANKING: 'Chuyển khoản', MOMO: 'MoMo', VNPAY: 'VNPay', CASH: 'Tiền mặt', PAYOS: 'PayOS' }
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState([])
