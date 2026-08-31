@@ -24,6 +24,9 @@ const siteService = {
   getMySite() {
     return axiosClient.get('/api/v1/sites/me')
   },
+  changeSubdomain(subdomain) {
+    return axiosClient.put('/api/v1/sites/me/subdomain', { subdomain })
+  },
 }
 
 export default siteService

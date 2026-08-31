@@ -46,4 +46,12 @@ public class SiteController {
     public ApiResponse<SiteDTO.SiteResponse> getMySite() {
         return ApiResponse.success(siteService.getMySite(SecurityUtil.getCurrentUserId()));
     }
+
+    @Operation(summary = "Change subdomain without re-deploying (moves existing files)")
+    @PutMapping("/me/subdomain")
+    public ApiResponse<SiteDTO.SiteResponse> changeSubdomain(
+            @Valid @RequestBody SiteDTO.ChangeSubdomainRequest request) {
+        return ApiResponse.success(siteService.changeSubdomain(
+                SecurityUtil.getCurrentUserId(), request.getSubdomain()));
+    }
 }

@@ -26,6 +26,15 @@ public class SiteDTO {
         private String subdomain;
     }
 
+    @Getter @Setter @NoArgsConstructor
+    @Schema(description = "Change subdomain request")
+    public static class ChangeSubdomainRequest {
+        @Schema(example = "mywebsite", description = "Subdomain mới")
+        @jakarta.validation.constraints.NotBlank
+        @Size(max = 30)
+        private String subdomain;
+    }
+
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
     @Schema(description = "Static site response")
     public static class SiteResponse {

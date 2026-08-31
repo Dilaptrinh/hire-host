@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Card, Col, Form, Input, Row, Tabs, Upload, Grid, Typography, message, Space, Divider, Alert } from "antd";
-import { GithubOutlined, InboxOutlined, FolderOutlined, FileOutlined, CheckCircleOutlined, LinkOutlined } from "@ant-design/icons";
+import { GithubOutlined, InboxOutlined, FolderOutlined, FileOutlined, CheckCircleOutlined, LinkOutlined, GlobalOutlined } from "@ant-design/icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import siteService from "../api/siteService";
@@ -38,6 +38,8 @@ export default function UploadProject () {
    const [loading, setLoading] = useState(false)
    const [result, setResult] = useState(null)
    const [subdomain, setSubdomain] = useState('')
+   const [changeSub, setChangeSub] = useState('')
+   const [changingSub, setChangingSub] = useState(false)
    const [githubForm] = Form.useForm()
 
    const requireLogin = () => {
@@ -93,6 +95,25 @@ export default function UploadProject () {
          messageApi.error(err?.response?.data?.message || 'Deploy thất bại');
       } finally {
          setLoading(false)
+      }
+   }
+
+   const handleChangeSubdomain = async () => {
+      if (!requireLogin()) return
+      if (!changeSub.trim()) {
+         messageApi.warning('Vui lòng nhập tên miền mới');
+         return;
+      }
+      setChangingSub(true)
+      try {
+         const res = await siteService.changeSubdomain(changeSub.trim())
+         setResult(res.data.data)
+         setChangeSub('')
+         messageApi.success('Đã đổi tên miền thành công');
+      } catch (err) {
+         messageApi.error(err?.response?.data?.message || 'Đổi tên miền thất bại');
+      } finally {
+         setChangingSub(false)
       }
    }
 
@@ -285,15 +306,43 @@ export default function UploadProject () {
       </Card>
    )
 
-   return (
-    <Row gutter={[24, 24]}>
-      <Col xs={24} md={14}>
-         {resultCard}
-         <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
-      </Col>
-      <Col xs={24} md={10}>
-         {guideCard}
-      </Col>
-    </Row>
-   );
+    return (
+     <Row gutter={[24, 24]}>
+       <Col xs={24} md={14}>
+          {resultCard}
+          <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
+          {isAuthenticated && (
+            <Card
+              style={{ marginTop: 16, borderRadius: 12, background: isDark ? '#1f1f1f' : '#fff', border: `1px solid ${isDark ? '#303030' : '#f0f0f0'}` }}
+            >
+              <Title level={5} style={{ margin: '0 0 4px', color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
+                <GlobalOutlined /> Đổi tên miền (subdomain)
+              </Title>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                {result?.subdomain
+                  ? `Tên miền hiện tại: ${result.subdomain}.duycode.id.vn`
+                  : 'Bạn chưa có website nào.'}
+              </Text>
+              <Space.Compact style={{ width: '100%' }}>
+                <Input
+                  placeholder="VD: ten-moi"
+                  value={changeSub}
+                  onChange={(e) => setChangeSub(e.target.value)}
+                  disabled={!result?.subdomain}
+                />
+                <Button type="primary" loading={changingSub} onClick={handleChangeSubdomain} disabled={!result?.subdomain}>
+                  Đổi tên miền
+                </Button>
+              </Space.Compact>
+              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
+                Đổi tên miền sẽ di chuyển website sang tên miền mới, không cần nộp lại code.
+              </Text>
+            </Card>
+          )}
+       </Col>
+       <Col xs={24} md={10}>
+          {guideCard}
+       </Col>
+     </Row>
+    );
 }

@@ -76,6 +76,21 @@ public class SiteService {
                 .orElse(null);
     }
 
+    @Transactional
+    public SiteDTO.SiteResponse changeSubdomain(Long userId, String newSub) {
+        Site site = siteRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Site", userId));
+        String oldSub = site.getSubdomain();
+        String resolved = resolveSubdomain(userId, newSub);
+        if (!oldSub.equals(resolved)) {
+            storageService.changeSubdomainFolder(oldSub, resolved);
+            site.setSubdomain(resolved);
+            site.setUrl(storageService.buildUrl(resolved));
+            siteRepository.save(site);
+        }
+        return siteMapper.toResponse(site);
+    }
+
     @Transactional(readOnly = true)
     public List<SiteDTO.SiteResponse> getAllSites() {
         return siteRepository.findAllWithUser().stream()

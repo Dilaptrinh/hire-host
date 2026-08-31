@@ -117,6 +117,23 @@ public class SiteStorageService {
         }
     }
 
+    public void changeSubdomainFolder(String oldSub, String newSub) {
+        if (oldSub == null || newSub == null) return;
+        Path webRoot = Paths.get(config.getRootPath());
+        Path oldPath = webRoot.resolve(oldSub).normalize();
+        Path newPath = webRoot.resolve(newSub).normalize();
+        if (!oldPath.startsWith(webRoot) || !newPath.startsWith(webRoot)) return;
+        if (oldPath.equals(newPath)) return;
+        if (Files.exists(oldPath)) {
+            try {
+                Files.createDirectories(webRoot);
+                Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new BadRequestException("Không thể đổi tên miền: " + e.getMessage());
+            }
+        }
+    }
+
     private void writeFile(Path staging, String rawPath, InputStream in) throws IOException {
         String sanitized = sanitize(rawPath);
         if (sanitized == null) {
