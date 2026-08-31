@@ -117,16 +117,6 @@ public class PayOSPaymentGateway {
         }
     }
 
-    private String extractSignature(String rawBody) {
-        try {
-            com.fasterxml.jackson.databind.JsonNode node =
-                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawBody);
-            return node.path("signature").asText(null);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     private String hmacSha256(String data, String key) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
