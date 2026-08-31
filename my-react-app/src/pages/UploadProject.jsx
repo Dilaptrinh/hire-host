@@ -198,7 +198,7 @@ export default function UploadProject () {
           <Form.Item label="Subdomain (tên miền con)">
             <Input
               placeholder="VD: mywebsite"
-              addonAfter=".duycode.id.vn"
+              addonAfter=".bootnode.cloud"
               value={subdomain}
               onChange={(e) => setSubdomain(e.target.value)}
               style={{ width: '100%' }}
