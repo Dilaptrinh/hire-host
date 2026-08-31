@@ -29,4 +29,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Page<Order> findAllWithServer(Pageable pageable);
 
     boolean existsByUserAndServerAndStatus(User user, Server server, OrderStatus status);
+
+    long countByServerAndStatus(Server server, OrderStatus status);
 }

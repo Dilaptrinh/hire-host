@@ -44,6 +44,15 @@ public class OrderService {
             throw new BadRequestException("Server is not available");
         }
 
+        // Kiểm tra số lượng giới hạn: còn slot thì mới bán
+        Integer qty = server.getQuantity();
+        if (qty != null) {
+            long activeCount = orderRepository.countByServerAndStatus(server, OrderStatus.ACTIVE);
+            if (activeCount >= qty) {
+                throw new BadRequestException("Gói này đã hết chỗ, vui lòng chọn gói khác");
+            }
+        }
+
         if (!request.getEndDate().isAfter(request.getStartDate())) {
             throw new BadRequestException("End date must be after start date");
         }
@@ -109,10 +118,6 @@ public class OrderService {
         }
         order.setStatus(OrderStatus.CANCELLED);
         order = orderRepository.save(order);
-
-        Server server = order.getServer();
-        server.setStatus(ServerStatus.AVAILABLE);
-        serverRepository.save(server);
 
         return orderMapper.toResponse(order);
     }

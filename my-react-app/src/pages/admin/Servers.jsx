@@ -106,6 +106,10 @@ export default function AdminServers() {
     { title: 'RAM', dataIndex: 'ram', key: 'ram', responsive: ['md'] },
     { title: 'Storage', dataIndex: 'storage', key: 'storage', responsive: ['md'] },
     { title: 'Giá', dataIndex: 'price', key: 'price', render: (p) => <Text strong>{formatPrice(p)}₫</Text> },
+    {
+      title: 'Còn lại', dataIndex: 'remaining', key: 'remaining',
+      render: (rem, r) => <Text>{r.quantity != null ? `${rem ?? 0} / ${r.quantity}` : '--'}</Text>,
+    },
     { title: 'Danh mục', dataIndex: 'categoryName', key: 'categoryName', render: (v) => v || '--', responsive: ['lg'] },
     {
       title: '', key: 'actions', render: (_, r) => (
@@ -174,6 +178,9 @@ export default function AdminServers() {
           </Form.Item>
           <Form.Item name="price" label="Giá (VNĐ)" rules={[{ required: true, message: 'Vui lòng nhập giá' }]}>
             <InputNumber style={{ width: '100%' }} min={0} placeholder="VD: 199000" formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
+          </Form.Item>
+          <Form.Item name="quantity" label="Số lượng (giới hạn)" rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}>
+            <InputNumber style={{ width: '100%' }} min={1} placeholder="VD: 10" />
           </Form.Item>
         </Form>
       </Modal>

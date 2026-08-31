@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Card, Col, Row, Button, Typography, Grid, Spin, Empty } from 'antd'
+import { Card, Col, Row, Button, Typography, Grid, Spin, Empty, Tag } from 'antd'
 import { CheckOutlined, ArrowRightOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import serverService from '../api/serverService'
@@ -66,6 +66,7 @@ export default function Hosting() {
       <Row gutter={[16, 16]} justify="center" style={{ marginTop: isMobile ? 12 : 24 }}>
         {servers.map((server, i) => {
           const color = colors[i % colors.length]
+          const soldOut = server.quantity != null && server.remaining != null && server.remaining <= 0
           const features = [
             `CPU: ${server.cpu}`,
             `RAM: ${server.ram}`,
@@ -125,6 +126,15 @@ export default function Hosting() {
                   <Text style={{ fontSize: isMobile ? 13 : 14, color: isDark ? '#8c8c8c' : '#6b7280' }}>
                     {server.description}
                   </Text>
+                  <div style={{ marginTop: 8 }}>
+                    {soldOut ? (
+                      <Tag color="red">Hết hàng</Tag>
+                    ) : (
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        Còn {server.remaining} / {server.quantity} chỗ
+                      </Text>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{
@@ -151,10 +161,11 @@ export default function Hosting() {
                   size={isMobile ? 'middle' : 'large'}
                   block
                   icon={<ShoppingCartOutlined />}
+                  disabled={soldOut}
                   style={{ marginTop: isMobile ? 16 : 24, borderRadius: 8 }}
                   onClick={() => navigate(`/order/${server.name.toLowerCase().replace(/\s+/g, '-')}`, { state: { server } })}
                 >
-                  Đăng ký ngay <ArrowRightOutlined />
+                  {soldOut ? 'Hết hàng' : 'Đăng ký ngay'} <ArrowRightOutlined />
                 </Button>
               </Card>
             </Col>

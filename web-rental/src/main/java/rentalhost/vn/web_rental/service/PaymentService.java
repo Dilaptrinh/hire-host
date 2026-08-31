@@ -211,9 +211,6 @@ public class PaymentService {
     private void activateOrder(Order order) {
         order.setStatus(OrderStatus.ACTIVE);
         orderRepository.save(order);
-        var server = order.getServer();
-        server.setStatus(ServerStatus.RENTED);
-        serverRepository.save(server);
     }
 
     @Transactional

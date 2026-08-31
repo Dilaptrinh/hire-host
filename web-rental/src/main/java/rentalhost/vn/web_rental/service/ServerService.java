@@ -6,11 +6,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.dto.ServerDTO;
+import rentalhost.vn.web_rental.enums.OrderStatus;
 import rentalhost.vn.web_rental.enums.ServerStatus;
 import rentalhost.vn.web_rental.exception.ResourceNotFoundException;
 import rentalhost.vn.web_rental.mapper.ServerMapper;
 import rentalhost.vn.web_rental.model.Server;
 import rentalhost.vn.web_rental.model.ServerCategory;
+import rentalhost.vn.web_rental.repository.OrderRepository;
 import rentalhost.vn.web_rental.repository.ServerCategoryRepository;
 import rentalhost.vn.web_rental.repository.ServerRepository;
 
@@ -22,39 +24,49 @@ public class ServerService {
 
     private final ServerRepository serverRepository;
     private final ServerCategoryRepository categoryRepository;
+    private final OrderRepository orderRepository;
     private final ServerMapper serverMapper;
+
+    private ServerDTO.ServerResponse toResponse(Server server) {
+        ServerDTO.ServerResponse resp = serverMapper.toResponse(server);
+        if (server.getQuantity() != null) {
+            long active = orderRepository.countByServerAndStatus(server, OrderStatus.ACTIVE);
+            resp.setRemaining(Math.max(0, server.getQuantity().longValue() - active));
+        }
+        return resp;
+    }
 
     public List<ServerDTO.ServerResponse> getAllAvailable() {
         return serverRepository.findByStatus(ServerStatus.AVAILABLE).stream()
-                .map(serverMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
     public Page<ServerDTO.ServerResponse> getAllAvailable(Pageable pageable) {
         return serverRepository.findByStatus(ServerStatus.AVAILABLE, pageable)
-                .map(serverMapper::toResponse);
+                .map(this::toResponse);
     }
 
     public Page<ServerDTO.ServerResponse> getAll(Pageable pageable) {
         return serverRepository.findAllWithCategory(pageable)
-                .map(serverMapper::toResponse);
+                .map(this::toResponse);
     }
 
     public List<ServerDTO.ServerResponse> getAll() {
         return serverRepository.findAll().stream()
-                .map(serverMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
     public ServerDTO.ServerResponse getById(Long id) {
         Server server = serverRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Server", id));
-        return serverMapper.toResponse(server);
+        return toResponse(server);
     }
 
     public List<ServerDTO.ServerResponse> getByCategory(Long categoryId) {
         return serverRepository.findByCategoryId(categoryId).stream()
-                .map(serverMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -75,10 +87,11 @@ public class ServerService {
                 .storage(request.getStorage())
                 .bandwidth(request.getBandwidth())
                 .price(request.getPrice())
+                .quantity(request.getQuantity())
                 .status(ServerStatus.AVAILABLE)
                 .build();
         server = serverRepository.save(server);
-        return serverMapper.toResponse(server);
+        return toResponse(server);
     }
 
     @Transactional
@@ -100,8 +113,9 @@ public class ServerService {
         server.setStorage(request.getStorage());
         server.setBandwidth(request.getBandwidth());
         server.setPrice(request.getPrice());
+        server.setQuantity(request.getQuantity());
         server = serverRepository.save(server);
-        return serverMapper.toResponse(server);
+        return toResponse(server);
     }
 
     @Transactional

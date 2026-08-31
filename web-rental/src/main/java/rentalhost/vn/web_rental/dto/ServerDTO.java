@@ -43,6 +43,10 @@ public class ServerDTO {
         @Schema(example = "199000")
         @NotNull @Positive
         private BigDecimal price;
+
+        @Schema(example = "10", description = "Số lượng giới hạn (số slot có thể bán)")
+        @NotNull @Positive
+        private Integer quantity;
     }
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -58,6 +62,8 @@ public class ServerDTO {
         private String storage;
         private String bandwidth;
         private BigDecimal price;
+        private Integer quantity;
+        private Long remaining;
         private String status;
     }
 }

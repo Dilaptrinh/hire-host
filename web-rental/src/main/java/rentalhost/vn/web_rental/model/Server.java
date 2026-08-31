@@ -43,6 +43,9 @@ public class Server {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "quantity")
+    private Integer quantity;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ServerStatus status;
