@@ -176,7 +176,6 @@ public class PaymentService {
             String code = node.path("code").asText("");
             JsonNode data = node.path("data");
             String orderCode = data.path("orderCode").asText("");
-            String status = data.path("status").asText("");
             String transactionId = data.path("transactionId").asText(null);
 
             Payment payment = paymentRepository.findByTransactionId(orderCode).orElse(null);
@@ -187,7 +186,8 @@ public class PaymentService {
             if (payment.getStatus() == PaymentStatus.SUCCESS) {
                 return "{\"success\":true}";
             }
-            if ("00".equals(code) && "PAID".equals(status)) {
+            // PayOS báo thanh toán thành công khi code == "00"
+            if ("00".equals(code)) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 if (transactionId != null && !transactionId.isBlank()) {
                     payment.setTransactionId(transactionId);
