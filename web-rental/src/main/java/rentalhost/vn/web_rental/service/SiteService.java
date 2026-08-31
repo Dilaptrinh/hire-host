@@ -110,7 +110,12 @@ public class SiteService {
         String resolved = resolveSubdomain(userId, requestedSub);
         Site existing = siteRepository.findByUserId(userId).orElse(null);
         if (existing != null) {
-            existing.setSubdomain(resolved);
+            String oldSub = existing.getSubdomain();
+            if (!oldSub.equals(resolved)) {
+                // Đổi subdomain -> xóa folder cũ để giải phóng tên miền cũ
+                storageService.deleteSiteFolder(oldSub);
+                existing.setSubdomain(resolved);
+            }
             return existing;
         }
         User user = userRepository.findById(userId)

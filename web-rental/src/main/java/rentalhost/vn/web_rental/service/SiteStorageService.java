@@ -107,7 +107,7 @@ public class SiteStorageService {
     }
 
     public void deleteSiteFolder(String subdomain) {
-        if (subdomain == null || !subdomain.matches("[a-z0-9]{6}")) {
+        if (subdomain == null || !subdomain.matches("^[a-z0-9][a-z0-9-]{0,28}[a-z0-9]$")) {
             return;
         }
         Path webRoot = Paths.get(config.getRootPath());
