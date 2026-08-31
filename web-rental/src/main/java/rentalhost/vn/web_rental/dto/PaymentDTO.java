@@ -40,6 +40,7 @@ public class PaymentDTO {
         private String status;
         private String transactionId;
         private String paymentUrl;
+        private String qrCode;
         private LocalDateTime paidAt;
     }
 }

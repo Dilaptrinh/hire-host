@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Form, Select, InputNumber, Button, Typography, message, Descriptions, Tag, Spin, Result, Grid } from 'antd'
-import { DollarOutlined, ArrowLeftOutlined, WalletOutlined } from '@ant-design/icons'
+import { Card, Form, Select, InputNumber, Button, Typography, message, Descriptions, Tag, Spin, Result, Grid, Space, Alert } from 'antd'
+import { DollarOutlined, ArrowLeftOutlined, WalletOutlined, QrcodeOutlined, CheckCircleFilled, LoadingOutlined } from '@ant-design/icons'
 import orderService from '../api/orderService'
 import paymentService from '../api/paymentService'
 import { useTheme } from '../contexts/ThemeContext'
@@ -10,11 +10,7 @@ const { Title, Text } = Typography
 const { useBreakpoint } = Grid
 
 const paymentMethods = [
-  { value: 'BANKING', label: 'Chuyển khoản ngân hàng' },
-  { value: 'MOMO', label: 'Ví MoMo' },
   { value: 'PAYOS', label: 'PayOS' },
-  { value: 'VNPAY', label: 'VNPay' },
-  { value: 'CASH', label: 'Tiền mặt' },
 ]
 
 export default function Payment() {
@@ -29,6 +25,7 @@ export default function Payment() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [confirmed, setConfirmed] = useState(false)
 
   const formatPrice = (p) => new Intl.NumberFormat('vi-VN').format(p)
 
@@ -47,6 +44,23 @@ export default function Payment() {
     })()
   }, [orderId])
 
+  // Poll để phát hiện khi PayOS webhook xác nhận thanh toán thành công
+  useEffect(() => {
+    if (!result || result.method !== 'PAYOS') return
+    const poll = setInterval(async () => {
+      try {
+        const res = await paymentService.getAllMine()
+        const list = res.data.data || []
+        const latest = list[0]
+        if (latest && (latest.status === 'SUCCESS' || latest.status === 'COMPLETED')) {
+          setConfirmed(true)
+          clearInterval(poll)
+        }
+      } catch { /* ignore */ }
+    }, 3000)
+    return () => clearInterval(poll)
+  }, [result])
+
   const onFinish = async (values) => {
     setSubmitting(true)
     try {
@@ -55,15 +69,7 @@ export default function Payment() {
         returnUrl: window.location.origin + '/payment/callback',
       }
       const res = await paymentService.create(payload)
-      const payment = res.data.data
-
-      if (payment.paymentUrl && ['MOMO', 'VNPAY', 'PAYOS'].includes(values.method)) {
-        window.location.href = payment.paymentUrl
-        return
-      }
-
-      setResult(payment)
-      message.success('Thanh toán thành công!')
+      setResult(res.data.data)
     } catch (error) {
       message.error(error.response?.data?.message || 'Thanh toán thất bại')
     } finally {
@@ -75,28 +81,63 @@ export default function Payment() {
   if (!order) return null
 
   if (result) {
-    return (
-      <div style={{ maxWidth: 600, margin: '0 auto' }}>
-        <Card styles={{ body: { padding: isMobile ? 24 : 40 } }} style={{ borderRadius: 16, background: isDark ? '#1f1f1f' : '#fff' }}>
-          <Result
-            status="success"
-            title="Thanh toán thành công!"
-            subTitle={`Giao dịch #${result.id} - ${formatPrice(result.amount)}₫`}
-            extra={[
-              <Button key="dash" type="primary" onClick={() => navigate('/dashboard')}>Về Dashboard</Button>,
-              <Button key="hosting" onClick={() => navigate('/hosting')}>Tiếp tục mua</Button>,
-            ]}
-          />
-          <Card size="small" style={{ background: isDark ? '#141414' : '#f9fafb' }}>
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="Mã giao dịch"><Text copyable>#{result.id}</Text></Descriptions.Item>
-              <Descriptions.Item label="Mã đơn hàng">#{result.orderId}</Descriptions.Item>
-              <Descriptions.Item label="Số tiền">{formatPrice(result.amount)}₫</Descriptions.Item>
-              <Descriptions.Item label="Phương thức">{paymentMethods.find((m) => m.value === result.method)?.label || result.method}</Descriptions.Item>
-              <Descriptions.Item label="Trạng thái"><Tag color="green">Hoàn tất</Tag></Descriptions.Item>
-              {result.paidAt && <Descriptions.Item label="Thời gian">{new Date(result.paidAt).toLocaleString('vi-VN')}</Descriptions.Item>}
-            </Descriptions>
+    if (confirmed) {
+      return (
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <Card styles={{ body: { padding: isMobile ? 24 : 40 } }} style={{ borderRadius: 16, background: isDark ? '#1f1f1f' : '#fff' }}>
+            <Result
+              status="success"
+              icon={<CheckCircleFilled style={{ color: '#52c41a', fontSize: 64 }} />}
+              title="Thanh toán thành công!"
+              subTitle={`Giao dịch #${result.id} - ${formatPrice(result.amount)}₫`}
+              extra={[
+                <Button key="dash" type="primary" onClick={() => navigate('/dashboard')}>Về Dashboard</Button>,
+                <Button key="hosting" onClick={() => navigate('/hosting')}>Tiếp tục mua</Button>,
+              ]}
+            />
           </Card>
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ maxWidth: 560, margin: '0 auto' }}>
+        <Card styles={{ body: { padding: isMobile ? 24 : 32 } }} style={{ borderRadius: 16, background: isDark ? '#1f1f1f' : '#fff', textAlign: 'center' }}>
+          <QrcodeOutlined style={{ fontSize: 44, color: '#1677ff', marginBottom: 12 }} />
+          <Title level={isMobile ? 4 : 3} style={{ margin: 0, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
+            Quét mã QR để thanh toán
+          </Title>
+          <Text type="secondary">Mở ứng dụng ngân hàng hoặc ví điện tử quét mã dưới đây</Text>
+
+          <div style={{ margin: '24px auto', display: 'flex', justifyContent: 'center' }}>
+            {result.qrCode ? (
+              <img
+                src={result.qrCode}
+                alt="QR thanh toán PayOS"
+                style={{ width: 220, height: 220, borderRadius: 12, border: `1px solid ${isDark ? '#303030' : '#e5e7eb'}`, background: '#fff' }}
+              />
+            ) : (
+              <Spin size="large" />
+            )}
+          </div>
+
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Text strong style={{ fontSize: 22, color: isDark ? '#e8e8e8' : '#1a1a2e' }}>
+              {formatPrice(result.amount)} ₫
+            </Text>
+            <Alert
+              type="info"
+              showIcon
+              icon={<LoadingOutlined />}
+              message="Đang chờ xác nhận thanh toán..."
+              description="Trang sẽ tự cập nhật khi giao dịch được xác nhận."
+            />
+            <Button type="primary" block size="large" icon={<WalletOutlined />}
+              onClick={() => result.paymentUrl && window.open(result.paymentUrl, '_blank')}>
+              Mở trang thanh toán PayOS
+            </Button>
+            <Button block onClick={() => navigate('/dashboard')}>Quay lại Dashboard</Button>
+          </Space>
         </Card>
       </div>
     )

@@ -159,6 +159,7 @@ public class PaymentService {
 
         PaymentDTO.PaymentResponse response = paymentMapper.toResponse(payment);
         response.setPaymentUrl(payosData.getCheckoutUrl());
+        response.setQrCode(payosData.getQrCode());
         return response;
     }
 
