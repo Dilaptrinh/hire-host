@@ -69,31 +69,52 @@ public class PayOSPaymentGateway {
             log.warn("PayOS webhook verify failed: body null/blank");
             return false;
         }
-        String checksumKey = paymentConfig.getPayos().getChecksumKey();
-        String keyMask = checksumKey != null && checksumKey.length() > 8
-                ? checksumKey.substring(0, 4) + "..." + checksumKey.substring(checksumKey.length() - 4)
-                : "(empty/short)";
-        log.info("PayOS checksumKeyMask={}", keyMask);
-
         String signature = extractSignature(rawBody);
         if (signature == null) {
             log.warn("PayOS webhook verify failed: no signature in body");
             return false;
         }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(rawBody);
+            com.fasterxml.jackson.databind.JsonNode data = node.path("data");
 
-        // Cách 1: body bỏ field signature
-        String stripped = rawBody;
-        int idx = rawBody.lastIndexOf(",\"signature\":");
-        if (idx >= 0) stripped = rawBody.substring(0, idx) + "}";
-        String hashStripped = hmacSha256(stripped, checksumKey);
+            // Sắp xếp key theo alphabet
+            java.util.List<String> keys = new java.util.ArrayList<>();
+            data.fieldNames().forEachRemaining(keys::add);
+            java.util.Collections.sort(keys);
 
-        // Cách 2: toàn bộ body
-        String hashFull = hmacSha256(rawBody, checksumKey);
+            // Xây chuỗi key=value&...
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < keys.size(); i++) {
+                String key = keys.get(i);
+                com.fasterxml.jackson.databind.JsonNode val = data.get(key);
+                String value = "";
+                if (val != null && !val.isNull()) {
+                    value = val.isTextual() || val.isNumber() || val.isBoolean() ? val.asText() : val.toString();
+                }
+                sb.append(key).append('=').append(value);
+                if (i < keys.size() - 1) sb.append('&');
+            }
 
-        boolean ok = signature.equals(hashStripped) || signature.equals(hashFull);
-        log.info("PayOS webhook verify: receivedSig={} hashStripped={} hashFull={} ok={}",
-                signature, hashStripped, hashFull, ok);
-        return ok;
+            String expected = hmacSha256(sb.toString(), paymentConfig.getPayos().getChecksumKey());
+            boolean ok = expected.equals(signature);
+            log.info("PayOS webhook verify ok={}", ok);
+            return ok;
+        } catch (Exception e) {
+            log.warn("PayOS webhook verify exception: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private String extractSignature(String rawBody) {
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawBody);
+            return node.path("signature").asText(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String extractSignature(String rawBody) {
