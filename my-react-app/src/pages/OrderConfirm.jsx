@@ -278,18 +278,21 @@ export default function OrderConfirm() {
           layout="vertical"
           onFinish={onFinish}
           requiredMark={false}
+          initialValues={{ startDate: dayjs() }} // Ngày bắt đầu mặc định = hôm nay, vẫn sửa được
           onValuesChange={handleDateChange}
         >
           <Space size={isMobile ? 12 : 16} style={{ width: '100%' }} align="start">
             <Form.Item
               name="startDate"
-              label="Ngày bắt đầu"
+              label="Ngày bắt đầu (From)"
               rules={[{ required: true, message: 'Vui lòng chọn ngày bắt đầu' }]}
               style={{ flex: 1 }}
             >
               <DatePicker
                 style={{ width: '100%' }}
-                placeholder="Chọn ngày"
+                placeholder="Chọn ngày bắt đầu"
+                format="DD/MM/YYYY"
+                allowClear={false}
                 disabledDate={(current) => current && current < dayjs().startOf('day')}
                 prefix={<CalendarOutlined />}
                 size={isMobile ? 'middle' : 'large'}
@@ -297,14 +300,15 @@ export default function OrderConfirm() {
             </Form.Item>
             <Form.Item
               name="endDate"
-              label="Ngày kết thúc"
+              label="Ngày kết thúc (To)"
               rules={[{ required: true, message: 'Vui lòng chọn ngày kết thúc' }]}
               style={{ flex: 1 }}
             >
               <DatePicker
                 style={{ width: '100%' }}
-                placeholder="Chọn ngày"
-                disabledDate={(current) => current && current < dayjs().startOf('day')}
+                placeholder="Chọn ngày kết thúc"
+                format="DD/MM/YYYY"
+                disabledDate={(current) => current && current < dayjs().add(1, 'day').startOf('day')}
                 prefix={<CalendarOutlined />}
                 size={isMobile ? 'middle' : 'large'}
               />
