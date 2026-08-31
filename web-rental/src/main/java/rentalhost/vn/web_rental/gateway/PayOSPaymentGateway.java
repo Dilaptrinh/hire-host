@@ -64,15 +64,37 @@ public class PayOSPaymentGateway {
         return response.getData();
     }
 
-    public boolean verifyWebhook(String body, String signature) {
-        if (body == null || signature == null || signature.isBlank()) {
-            log.warn("PayOS webhook verify failed: body or signature null/blank");
+    public boolean verifyWebhook(String rawBody) {
+        if (rawBody == null || rawBody.isBlank()) {
+            log.warn("PayOS webhook verify failed: body null/blank");
             return false;
         }
-        String expected = hmacSha256(body, paymentConfig.getPayos().getChecksumKey());
+        // Lấy signature từ trong body (PayOS gửi signature trong body, không phải header)
+        String signature = extractSignature(rawBody);
+        if (signature == null) {
+            log.warn("PayOS webhook verify failed: no signature in body");
+            return false;
+        }
+        // PayOS ký trên body KHÔNG có field "signature" (field cuối cùng)
+        String signedBody = rawBody;
+        int idx = rawBody.lastIndexOf(",\"signature\":");
+        if (idx >= 0) {
+            signedBody = rawBody.substring(0, idx) + "}";
+        }
+        String expected = hmacSha256(signedBody, paymentConfig.getPayos().getChecksumKey());
         boolean ok = expected.equals(signature);
         log.info("PayOS webhook verify: receivedSig={} computedSig={} ok={}", signature, expected, ok);
         return ok;
+    }
+
+    private String extractSignature(String rawBody) {
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(rawBody);
+            return node.path("signature").asText(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String hmacSha256(String data, String key) {

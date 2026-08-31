@@ -166,7 +166,7 @@ public class PaymentService {
     @Transactional
     public String handlePayOSWebhook(String rawBody, String signature) {
         log.info("PayOS webhook received");
-        if (!payOSPaymentGateway.verifyWebhook(rawBody, signature)) {
+        if (!payOSPaymentGateway.verifyWebhook(rawBody)) {
             log.warn("Invalid PayOS webhook signature");
             return "{\"error\":\"Invalid signature\"}";
         }
