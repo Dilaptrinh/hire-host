@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
 
@@ -30,14 +30,14 @@ services:
     ports:
       - "8081:8081"
     environment:
-      # Cấu hình Kết nối MySQL
+      # Cáº¥u hÃ¬nh Káº¿t ná»‘i MySQL
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/${MYSQL_DATABASE}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
 
       # Domain System Config
-      APP_BASE_URL: ${APP_BASE_URL:-https://hosting.bootnode.cloud}
-      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://hosting.bootnode.cloud}
+      APP_BASE_URL: ${APP_BASE_URL:-https://bootnode.cloud}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-https://bootnode.cloud}
       APP_BASE_DOMAIN: ${APP_BASE_DOMAIN:-bootnode.cloud}
 
       # Security & Admin Config
