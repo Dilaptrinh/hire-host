@@ -10,7 +10,7 @@ const { Title, Text } = Typography
 const { useBreakpoint } = Grid
 
 const paymentMethods = [
-  { value: 'PAYOS', label: 'PayOS' },
+  { value: 'PAYOS', label: 'Mã QR (PayOS)' },
 ]
 
 export default function Payment() {

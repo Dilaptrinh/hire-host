@@ -5,7 +5,6 @@ import userService from '../api/userService'
 import {
   setAccessToken,
   clearAccessToken,
-  getRefreshToken,
   setRefreshToken,
   clearRefreshToken,
 } from '../api/tokenStorage'
@@ -34,19 +33,11 @@ export function AuthProvider({ children }) {
     initRef.current = true
 
     const initAuth = async () => {
-      const rt = getRefreshToken()
-      if (!rt) {
-        clearAccessToken()
-        localStorage.removeItem('user')
-        setUser(null)
-        setInitializing(false)
-        return
-      }
+      // Refresh token nằm trong cookie HttpOnly -> tự gửi kèm, chỉ cần gọi refresh
       try {
-        const res = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, { refreshToken: rt })
+        const res = await axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {}, { withCredentials: true })
         const auth = res.data.data
         setAccessToken(auth.accessToken)
-        if (auth.refreshToken) setRefreshToken(auth.refreshToken)
       } catch {
         clearAccessToken()
         clearRefreshToken()

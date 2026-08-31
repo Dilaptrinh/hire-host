@@ -36,7 +36,7 @@ export default function OrderConfirm() {
   const [paymentMethod, setPaymentMethod] = useState('PAYOS')
 
   const paymentMethods = [
-    { value: 'PAYOS', label: 'PayOS', icon: <WalletOutlined /> },
+    { value: 'PAYOS', label: 'Mã QR (PayOS)', icon: <WalletOutlined /> },
   ]
 
   const handlePay = async () => {
