@@ -8,6 +8,7 @@ import rentalhost.vn.web_rental.enums.PaymentStatus;
 import rentalhost.vn.web_rental.model.Order;
 import rentalhost.vn.web_rental.model.Payment;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +31,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByRequestId(String requestId);
 
     Optional<Payment> findByTransactionId(String transactionId);
+
+    @Query("SELECT p FROM Payment p JOIN FETCH p.order WHERE p.status = :status AND p.createdAt < :before")
+    List<Payment> findByStatusAndCreatedAtBefore(PaymentStatus status, LocalDateTime before);
 }

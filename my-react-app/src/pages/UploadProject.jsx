@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Card, Col, Form, Input, Row, Tabs, Upload, Grid, Typography, message, Space, Divider, Alert } from "antd";
-import { GithubOutlined, InboxOutlined, FolderOutlined, FileOutlined, CheckCircleOutlined, LinkOutlined, GlobalOutlined } from "@ant-design/icons";
+import { Button, Card, Col, Form, Input, Row, Tabs, Upload, Grid, Typography, message, Space, Divider, Alert, Modal } from "antd";
+import { GithubOutlined, InboxOutlined, FolderOutlined, FileOutlined, LinkOutlined, GlobalOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useAuth } from "../contexts/AuthContext";
 import siteService from "../api/siteService";
@@ -59,7 +59,7 @@ export default function UploadProject () {
             if (res.data.data) {
                setResult(res.data.data)
             }
-         } catch (err) {
+         } catch {
             // chưa có site thì bỏ qua
          }
       }
@@ -115,6 +115,27 @@ export default function UploadProject () {
       } finally {
          setChangingSub(false)
       }
+   }
+
+   const handleDeleteSite = () => {
+      Modal.confirm({
+         title: 'Xóa website',
+         content: 'Website và tên miền của bạn sẽ bị xóa vĩnh viễn khỏi hệ thống. Bạn chắc chắn muốn xóa?',
+         okText: 'Xóa',
+         okType: 'danger',
+         cancelText: 'Quay lại',
+         onOk: async () => {
+            try {
+               await siteService.deleteMySite()
+               setResult(null)
+               setSubdomain('')
+               setChangeSub('')
+               messageApi.success('Đã xóa website')
+            } catch (err) {
+               messageApi.error(err?.response?.data?.message || 'Xóa thất bại');
+            }
+         },
+      })
    }
 
    const props = {
@@ -337,6 +358,10 @@ export default function UploadProject () {
               <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 8 }}>
                 Đổi tên miền sẽ di chuyển website sang tên miền mới, không cần nộp lại code.
               </Text>
+              <Divider style={{ margin: '16px 0 8px' }} />
+              <Button danger icon={<DeleteOutlined />} disabled={!result?.subdomain} onClick={handleDeleteSite}>
+                Xóa website
+              </Button>
             </Card>
           )}
        </Col>

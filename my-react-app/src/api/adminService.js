@@ -22,6 +22,10 @@ const adminService = {
     return axiosClient.get(`/api/v1/admin/sites/users/${userId}`)
   },
 
+  deleteSite(siteId) {
+    return axiosClient.delete(`/api/v1/admin/sites/${siteId}`)
+  },
+
   deleteUser(id) {
     return axiosClient.delete(`/api/v1/admin/users/${id}`)
   },

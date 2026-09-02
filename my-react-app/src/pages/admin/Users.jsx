@@ -103,6 +103,25 @@ export default function AdminUsers() {
     })
   }
 
+  const handleDeleteSite = (site) => {
+    Modal.confirm({
+      title: 'Xóa website',
+      content: `Xóa website "${site.subdomain}.bootnode.cloud" của người dùng này?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await adminService.deleteSite(site.id)
+          message.success('Đã xóa website')
+          setUserSites((prev) => prev.filter((s) => s.id !== site.id))
+        } catch (err) {
+          message.error(err.response?.data?.message || 'Xóa thất bại')
+        }
+      },
+    })
+  }
+
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
     { title: 'Email', dataIndex: 'email', key: 'email' },
@@ -246,13 +265,16 @@ export default function AdminUsers() {
                       <Text code>{s.subdomain}</Text>
                       <Tag color={s.status === 'ACTIVE' ? 'green' : s.status === 'FAILED' ? 'red' : 'orange'}>{s.status}</Tag>
                     </Space>
-                    {s.status === 'ACTIVE' && s.url ? (
-                      <a href={s.url} target="_blank" rel="noopener noreferrer">
-                        <LinkOutlined /> {s.url}
-                      </a>
-                    ) : (
-                      <Text type="secondary">{s.errorMessage || '--'}</Text>
-                    )}
+                    <Space>
+                      {s.status === 'ACTIVE' && s.url ? (
+                        <a href={s.url} target="_blank" rel="noopener noreferrer">
+                          <LinkOutlined /> {s.url}
+                        </a>
+                      ) : (
+                        <Text type="secondary">{s.errorMessage || '--'}</Text>
+                      )}
+                      <Button type="text" danger size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteSite(s)} />
+                    </Space>
                   </div>
                 ))}
               </div>

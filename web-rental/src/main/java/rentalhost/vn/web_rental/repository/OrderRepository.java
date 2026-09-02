@@ -9,6 +9,8 @@ import rentalhost.vn.web_rental.model.Order;
 import rentalhost.vn.web_rental.model.Server;
 import rentalhost.vn.web_rental.model.User;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
@@ -31,4 +33,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     boolean existsByUserAndServerAndStatus(User user, Server server, OrderStatus status);
 
     long countByServerAndStatus(Server server, OrderStatus status);
+
+    @Query("SELECT o FROM Order o JOIN FETCH o.server WHERE o.status = :status AND o.createdAt < :before")
+    List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, LocalDateTime before);
+
+    @Query("SELECT o FROM Order o JOIN FETCH o.server WHERE o.status = :status AND o.endDate < :today")
+    List<Order> findByStatusAndEndDateBefore(OrderStatus status, LocalDate today);
 }

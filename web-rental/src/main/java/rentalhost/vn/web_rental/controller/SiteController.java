@@ -54,4 +54,11 @@ public class SiteController {
         return ApiResponse.success(siteService.changeSubdomain(
                 SecurityUtil.getCurrentUserId(), request.getSubdomain()));
     }
+
+    @Operation(summary = "Delete current user's hosted site")
+    @DeleteMapping("/me")
+    public ApiResponse<Void> deleteMySite() {
+        siteService.deleteSite(SecurityUtil.getCurrentUserId());
+        return ApiResponse.noContent();
+    }
 }

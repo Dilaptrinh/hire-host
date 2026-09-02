@@ -27,6 +27,9 @@ const siteService = {
   changeSubdomain(subdomain) {
     return axiosClient.put('/api/v1/sites/me/subdomain', { subdomain })
   },
+  deleteMySite() {
+    return axiosClient.delete('/api/v1/sites/me')
+  },
 }
 
 export default siteService

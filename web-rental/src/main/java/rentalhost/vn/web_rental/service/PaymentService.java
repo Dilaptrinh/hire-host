@@ -209,6 +209,10 @@ public class PaymentService {
     }
 
     private void activateOrder(Order order) {
+        if (order.getStatus() != OrderStatus.PENDING) {
+            log.warn("activateOrder skipped: order {} status={} (cancelled/expired by scheduler)", order.getId(), order.getStatus());
+            return;
+        }
         order.setStatus(OrderStatus.ACTIVE);
         orderRepository.save(order);
     }
@@ -246,12 +250,16 @@ public class PaymentService {
             paymentRepository.save(payment);
 
             Order order = payment.getOrder();
-            order.setStatus(OrderStatus.ACTIVE);
-            orderRepository.save(order);
+            if (order.getStatus() == OrderStatus.PENDING) {
+                order.setStatus(OrderStatus.ACTIVE);
+                orderRepository.save(order);
 
-            var server = order.getServer();
-            server.setStatus(ServerStatus.RENTED);
-            serverRepository.save(server);
+                var server = order.getServer();
+                server.setStatus(ServerStatus.RENTED);
+                serverRepository.save(server);
+            } else {
+                log.warn("MoMo IPN: order {} already {} - not reactivated", order.getId(), order.getStatus());
+            }
 
             log.info("Payment SUCCESS for orderId: {}", params.get("orderId"));
             return "{\"RspCode\":\"00\",\"Message\":\"Success\"}";
