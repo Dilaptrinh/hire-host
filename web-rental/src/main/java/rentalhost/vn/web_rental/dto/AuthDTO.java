@@ -1,5 +1,6 @@
 package rentalhost.vn.web_rental.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -66,6 +67,9 @@ public class AuthDTO {
         @Schema(example = "eyJhbGciOiJIUzI1NiJ9...")
         private String accessToken;
 
+        // Refresh token chỉ được đặt trong cookie HttpOnly, KHÔNG trả trong body JSON.
+        @JsonIgnore
+        @Getter(onMethod_ = @JsonIgnore)
         @Schema(example = "eyJhbGciOiJIUzI1NiJ9...")
         private String refreshToken;
 
