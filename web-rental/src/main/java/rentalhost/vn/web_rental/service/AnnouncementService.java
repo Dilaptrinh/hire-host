@@ -14,7 +14,9 @@ import rentalhost.vn.web_rental.mapper.AnnouncementMapper;
 import rentalhost.vn.web_rental.model.Announcement;
 import rentalhost.vn.web_rental.repository.AnnouncementRepository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -29,7 +31,7 @@ public class AnnouncementService {
     public List<AnnouncementDTO.AnnouncementResponse> getAll() {
         return announcementRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(announcementMapper::toResponse)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Transactional(readOnly = true)

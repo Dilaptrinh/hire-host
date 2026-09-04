@@ -11,7 +11,9 @@ import rentalhost.vn.web_rental.model.Server;
 import rentalhost.vn.web_rental.repository.OrderRepository;
 import rentalhost.vn.web_rental.repository.ServerRepository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Dữ liệu catalogue công khai được cache bằng Redis (tăng tốc trang hosting).
@@ -30,7 +32,7 @@ public class PublicCatalogService {
     public List<ServerDTO.ServerResponse> availableServers() {
         return serverRepository.findByStatus(ServerStatus.AVAILABLE).stream()
                 .map(this::toResponse)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private ServerDTO.ServerResponse toResponse(Server server) {

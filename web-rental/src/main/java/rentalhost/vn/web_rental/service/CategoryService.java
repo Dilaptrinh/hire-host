@@ -12,7 +12,9 @@ import rentalhost.vn.web_rental.mapper.CategoryMapper;
 import rentalhost.vn.web_rental.model.ServerCategory;
 import rentalhost.vn.web_rental.repository.ServerCategoryRepository;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ public class CategoryService {
     public List<CategoryDTO.CategoryResponse> getAll() {
         return categoryRepository.findAll().stream()
                 .map(categoryMapper::toResponse)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     public CategoryDTO.CategoryResponse getById(Long id) {
