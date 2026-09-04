@@ -1,6 +1,8 @@
 package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.dto.CategoryDTO;
@@ -19,6 +21,7 @@ public class CategoryService {
     private final ServerCategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
 
+    @Cacheable(value = "categories")
     public List<CategoryDTO.CategoryResponse> getAll() {
         return categoryRepository.findAll().stream()
                 .map(categoryMapper::toResponse)
@@ -32,6 +35,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "categories", allEntries = true)
     public CategoryDTO.CategoryResponse create(CategoryDTO.CategoryRequest request) {
         if (categoryRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Category name already exists");
@@ -45,6 +49,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "categories", allEntries = true)
     public CategoryDTO.CategoryResponse update(Long id, CategoryDTO.CategoryRequest request) {
         ServerCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category", id));
@@ -55,6 +60,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "categories", allEntries = true)
     public void delete(Long id) {
         if (!categoryRepository.existsById(id)) {
             throw new ResourceNotFoundException("Category", id);

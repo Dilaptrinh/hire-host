@@ -2,6 +2,8 @@ package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ public class AnnouncementService {
     private final AnnouncementRepository announcementRepository;
     private final AnnouncementMapper announcementMapper;
 
+    @Cacheable(value = "announcements")
     @Transactional(readOnly = true)
     public List<AnnouncementDTO.AnnouncementResponse> getAll() {
         return announcementRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -36,6 +39,7 @@ public class AnnouncementService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "announcements", allEntries = true)
     public AnnouncementDTO.AnnouncementResponse create(AnnouncementDTO.AnnouncementRequest request) {
         Announcement announcement = Announcement.builder()
                 .title(request.getTitle())
@@ -45,6 +49,7 @@ public class AnnouncementService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "announcements", allEntries = true)
     public AnnouncementDTO.AnnouncementResponse update(Long id, AnnouncementDTO.AnnouncementRequest request) {
         Announcement announcement = announcementRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Announcement", id));
@@ -54,6 +59,7 @@ public class AnnouncementService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "announcements", allEntries = true)
     public void delete(Long id) {
         if (!announcementRepository.existsById(id)) {
             throw new ResourceNotFoundException("Announcement", id);

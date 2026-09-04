@@ -2,6 +2,8 @@ package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +32,7 @@ public class SiteService {
     private final GitHubCloneService gitHubCloneService;
 
     @Transactional
+    @CacheEvict(cacheNames = "mySites", allEntries = true)
     public SiteDTO.SiteResponse deployFromFolder(Long userId, String subdomain, List<MultipartFile> files) {
         Site site = getOrCreateSite(userId, subdomain);
         site.setStatus(SiteStatus.DEPLOYING);
@@ -50,6 +53,7 @@ public class SiteService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "mySites", allEntries = true)
     public SiteDTO.SiteResponse deployFromGithub(Long userId, String subdomain, String githubUrl) {
         Site site = getOrCreateSite(userId, subdomain);
         site.setStatus(SiteStatus.DEPLOYING);
@@ -69,6 +73,7 @@ public class SiteService {
         return siteMapper.toResponse(siteRepository.save(site));
     }
 
+    @Cacheable(value = "mySites", key = "#userId", unless = "#result == null")
     @Transactional(readOnly = true)
     public SiteDTO.SiteResponse getMySite(Long userId) {
         return siteRepository.findByUserId(userId)
@@ -77,6 +82,7 @@ public class SiteService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "mySites", allEntries = true)
     public SiteDTO.SiteResponse changeSubdomain(Long userId, String newSub) {
         Site site = siteRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Site", userId));
@@ -106,6 +112,7 @@ public class SiteService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "mySites", allEntries = true)
     public void deleteSite(Long userId) {
         Site site = siteRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Site", userId));
@@ -114,6 +121,7 @@ public class SiteService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "mySites", allEntries = true)
     public void deleteSiteById(Long siteId) {
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new ResourceNotFoundException("Site", siteId));

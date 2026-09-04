@@ -1,7 +1,9 @@
 package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import rentalhost.vn.web_rental.repository.OrderRepository;
 import rentalhost.vn.web_rental.repository.ServerCategoryRepository;
 import rentalhost.vn.web_rental.repository.ServerRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,6 +29,7 @@ public class ServerService {
     private final ServerCategoryRepository categoryRepository;
     private final OrderRepository orderRepository;
     private final ServerMapper serverMapper;
+    private final PublicCatalogService publicCatalogService;
 
     private ServerDTO.ServerResponse toResponse(Server server) {
         ServerDTO.ServerResponse resp = serverMapper.toResponse(server);
@@ -37,14 +41,17 @@ public class ServerService {
     }
 
     public List<ServerDTO.ServerResponse> getAllAvailable() {
-        return serverRepository.findByStatus(ServerStatus.AVAILABLE).stream()
-                .map(this::toResponse)
-                .toList();
+        return publicCatalogService.availableServers();
     }
 
     public Page<ServerDTO.ServerResponse> getAllAvailable(Pageable pageable) {
-        return serverRepository.findByStatus(ServerStatus.AVAILABLE, pageable)
-                .map(this::toResponse);
+        List<ServerDTO.ServerResponse> all = new ArrayList<>(publicCatalogService.availableServers());
+        int total = all.size();
+        int pageSize = pageable.getPageSize();
+        int pageNumber = Math.max(pageable.getPageNumber(), 0);
+        int from = Math.min(pageNumber * pageSize, total);
+        int to = Math.min(from + pageSize, total);
+        return new PageImpl<>(all.subList(from, to), pageable, total);
     }
 
     public Page<ServerDTO.ServerResponse> getAll(Pageable pageable) {
@@ -65,12 +72,13 @@ public class ServerService {
     }
 
     public List<ServerDTO.ServerResponse> getByCategory(Long categoryId) {
-        return serverRepository.findByCategoryId(categoryId).stream()
-                .map(this::toResponse)
+        return publicCatalogService.availableServers().stream()
+                .filter(s -> categoryId.equals(s.getCategoryId()))
                 .toList();
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public ServerDTO.ServerResponse create(ServerDTO.ServerRequest request) {
         ServerCategory category = null;
         if (request.getCategoryId() != null) {
@@ -95,6 +103,7 @@ public class ServerService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public ServerDTO.ServerResponse update(Long id, ServerDTO.ServerRequest request) {
         Server server = serverRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Server", id));
@@ -119,6 +128,7 @@ public class ServerService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "servers", allEntries = true)
     public void delete(Long id) {
         if (!serverRepository.existsById(id)) {
             throw new ResourceNotFoundException("Server", id);

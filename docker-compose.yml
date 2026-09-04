@@ -21,6 +21,18 @@ services:
 
   # 2. BACKEND: Spring Boot Java 17
 
+  redis:
+    image: redis:7-alpine
+    container_name: web_rental_redis
+    restart: always
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - web_rental_net
+
   backend:
     build:
       context: ./web-rental
@@ -61,10 +73,15 @@ services:
 
       # Static Site Hosting
       SITE_ROOT_PATH: /srv/hosted-sites
+
+      # Redis
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     volumes:
       - hosted_sites:/srv/hosted-sites
     depends_on:
       - mysql-db
+      - redis
     networks:
       - web_rental_net
 
@@ -90,6 +107,7 @@ services:
 volumes:
   mysql_data:
   hosted_sites:
+  redis_data:
 
 networks:
   web_rental_net:
