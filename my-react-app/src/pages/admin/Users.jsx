@@ -222,6 +222,9 @@ export default function AdminUsers() {
           ]}
         />
       </div>
+      <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+        Tổng {total} người dùng{roleFilter || statusFilter || searchEmail ? ' (đang lọc)' : ''}
+      </Text>
       <Table
         columns={columns}
         dataSource={users}
