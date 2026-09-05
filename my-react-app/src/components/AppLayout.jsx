@@ -56,7 +56,6 @@ export default function AppLayout() {
 
   const getSelectedKey = () => {
     const path = location.pathname
-    if (path.startsWith('/admin')) return '/admin'
     if (path.startsWith('/dashboard')) return '/dashboard'
     if (path.startsWith('/order')) return '/'
     if (path.startsWith('/payment')) return '/dashboard'
@@ -76,7 +75,6 @@ export default function AppLayout() {
       ? [
         { type: 'divider' },
         { key: 'admin-group', icon: <SettingOutlined />, label: 'Quản trị', disabled: true },
-        { key: '/admin', icon: <CrownOutlined />, label: 'Dashboard' },
         { key: '/admin/users', icon: <TeamOutlined />, label: 'Người dùng' },
         { key: '/admin/servers', icon: <CloudServerOutlined />, label: 'Gói hosting' },
         { key: '/admin/categories', icon: <AppstoreOutlined />, label: 'Danh mục' },

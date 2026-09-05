@@ -233,7 +233,13 @@ export default function AdminUsers() {
         })}
         scroll={{ x: isMobile ? 700 : undefined }}
         size={isMobile ? 'small' : 'middle'}
-        pagination={{ current: page + 1, total, pageSize: 10, onChange: (p) => setPage(p - 1) }}
+        pagination={total > 10 ? {
+          current: page + 1,
+          total,
+          pageSize: 10,
+          showTotal: (t) => `Tổng ${t} người dùng`,
+          onChange: (p) => setPage(p - 1),
+        } : false}
       />
       <Drawer
         title={selectedUser ? `Chi tiết người dùng: ${selectedUser.email}` : ''}
