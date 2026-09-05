@@ -32,7 +32,7 @@ export default function AdminAnnouncements() {
     try {
       const res = await announcementService.getAllAdmin({ page: p, size: 10, sort: 'createdAt,desc' })
       setList(res.data.data.content || [])
-      setTotal(res.data.data.totalElements || 0)
+      setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
     } catch {
       message.error('Không thể tải thông báo')
     } finally {

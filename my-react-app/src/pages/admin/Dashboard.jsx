@@ -29,10 +29,10 @@ export default function AdminDashboard() {
           adminService.getAllPayments({ page: 0, size: 1 }),
         ])
         setStats({
-          users: usersRes.data.data?.totalElements || 0,
-          servers: serversRes.data.data?.totalElements || 0,
-          orders: ordersRes.data.data?.totalElements || 0,
-          payments: paymentsRes.data.data?.totalElements || 0,
+          users: usersRes.data.data?.page?.totalElements ?? usersRes.data.data?.totalElements ?? 0,
+          servers: serversRes.data.data?.page?.totalElements ?? serversRes.data.data?.totalElements ?? 0,
+          orders: ordersRes.data.data?.page?.totalElements ?? ordersRes.data.data?.totalElements ?? 0,
+          payments: paymentsRes.data.data?.page?.totalElements ?? paymentsRes.data.data?.totalElements ?? 0,
         })
       } catch {
         setStats({ users: 0, servers: 0, orders: 0, payments: 0 })

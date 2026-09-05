@@ -34,7 +34,7 @@ export default function AdminUsers() {
         const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail, role: roleFilter, status: statusFilter })
         if (!active) return
         setUsers(res.data.data.content || [])
-        setTotal(res.data.data.totalElements || 0)
+        setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
       } catch {
         if (active) message.error('Không thể tải danh sách người dùng')
       } finally {
@@ -47,7 +47,7 @@ export default function AdminUsers() {
   const refresh = async () => {
     const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail, role: roleFilter, status: statusFilter })
     setUsers(res.data.data.content || [])
-    setTotal(res.data.data.totalElements || 0)
+    setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
   }
 
   const handleFilterChange = (setter) => (value) => {

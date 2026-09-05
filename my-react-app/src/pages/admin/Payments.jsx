@@ -26,7 +26,7 @@ export default function AdminPayments() {
       try {
         const res = await adminService.getAllPayments({ page, size: 10, sort: ['id,desc'] })
         setPayments(res.data.data.content || [])
-        setTotal(res.data.data.totalElements || 0)
+        setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
       } catch { message.error('Không thể tải thanh toán')
       } finally { setLoading(false) }
     }

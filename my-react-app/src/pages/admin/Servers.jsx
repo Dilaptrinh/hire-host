@@ -33,7 +33,7 @@ export default function AdminServers() {
           categoryService.getAll(),
         ])
         setServers(sRes.data.data.content || [])
-        setTotal(sRes.data.data.totalElements || 0)
+        setTotal(sRes.data.data?.page?.totalElements ?? sRes.data.data?.totalElements ?? 0)
         setCategories(cRes.data.data || [])
       } catch {
         message.error('Không thể tải dữ liệu')
@@ -46,7 +46,7 @@ export default function AdminServers() {
   const refreshServers = async () => {
     const res = await adminService.getAllServers({ page, size: 10, sort: ['id,desc'] })
     setServers(res.data.data.content || [])
-    setTotal(res.data.data.totalElements || 0)
+        setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
   }
 
   const openCreate = () => {

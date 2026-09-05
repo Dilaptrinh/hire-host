@@ -27,7 +27,7 @@ export default function AdminOrders() {
       try {
         const res = await adminService.getAllOrders({ page, size: 10, sort: ['id,desc'] })
         setOrders(res.data.data.content || [])
-        setTotal(res.data.data.totalElements || 0)
+        setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
       } catch { message.error('Không thể tải đơn hàng')
       } finally { setLoading(false) }
     }
