@@ -1,12 +1,14 @@
 package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.dto.AuthDTO;
 import rentalhost.vn.web_rental.enums.UserRole;
 import rentalhost.vn.web_rental.enums.UserStatus;
+import rentalhost.vn.web_rental.exception.BadRequestException;
 import rentalhost.vn.web_rental.exception.DuplicateResourceException;
 import rentalhost.vn.web_rental.exception.UnauthorizedException;
 import rentalhost.vn.web_rental.model.RefreshToken;
@@ -29,8 +31,16 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtConfig jwtConfig;
 
+    // Đăng ký bằng form thường bị tắt vì chưa có xác thực email.
+    // Bật lại khi có email verification: app.registration.enabled=true
+    @Value("${app.registration.enabled:false}")
+    private boolean registrationEnabled;
+
     @Transactional
     public AuthDTO.AuthResponse register(AuthDTO.RegisterRequest request) {
+        if (!registrationEnabled) {
+            throw new BadRequestException("Đăng ký bằng email/mật khẩu đang tạm khóa. Vui lòng đăng ký bằng Google.");
+        }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already in use");
         }
