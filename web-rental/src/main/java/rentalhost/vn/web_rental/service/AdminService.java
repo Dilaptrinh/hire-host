@@ -29,7 +29,7 @@ public class AdminService {
     }
 
     public Page<UserDTO.UserResponse> searchUsers(String email, UserRole role, UserStatus status, Pageable pageable) {
-        Specification<User> spec = Specification.where(null);
+        Specification<User> spec = (root, query, cb) -> cb.conjunction();
 
         if (email != null && !email.isBlank()) {
             String like = "%" + email.trim().toLowerCase() + "%";
