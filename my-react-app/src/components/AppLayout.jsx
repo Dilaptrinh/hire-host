@@ -165,7 +165,9 @@ export default function AppLayout() {
           }}
         >
           {renderLogo(!siderCollapsed)}
-          {renderMenu(isDark ? 'dark' : 'light')}
+          <div style={{ height: 'calc(100vh - 64px)', overflowY: 'auto', overflowX: 'hidden' }}>
+            {renderMenu(isDark ? 'dark' : 'light')}
+          </div>
         </Layout.Sider>
       )}
 
