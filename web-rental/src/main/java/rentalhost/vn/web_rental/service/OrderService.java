@@ -1,6 +1,7 @@
 package rentalhost.vn.web_rental.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -69,6 +71,9 @@ public class OrderService {
                 .status(OrderStatus.PENDING)
                 .build();
         order = orderRepository.save(order);
+
+        log.info("ORDER_CREATED orderId={} buyerId={} buyerEmail={} serverId={} server={} days={} total={}",
+                order.getId(), user.getId(), user.getEmail(), server.getId(), server.getName(), days, totalPrice);
 
         return orderMapper.toResponse(order);
     }

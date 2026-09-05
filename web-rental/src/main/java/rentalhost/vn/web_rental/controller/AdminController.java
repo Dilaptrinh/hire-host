@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -15,6 +16,7 @@ import rentalhost.vn.web_rental.dto.*;
 import rentalhost.vn.web_rental.enums.UserRole;
 import rentalhost.vn.web_rental.enums.UserStatus;
 import rentalhost.vn.web_rental.helper.ApiResponse;
+import rentalhost.vn.web_rental.security.SecurityUtil;
 import rentalhost.vn.web_rental.service.*;
 
 @Tag(name = "Admin", description = "Admin & Super Admin management endpoints")
@@ -22,6 +24,7 @@ import rentalhost.vn.web_rental.service.*;
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
+@Slf4j
 public class AdminController {
 
     private final ServerService serverService;
@@ -40,20 +43,28 @@ public class AdminController {
     @Operation(summary = "Create a new hosting plan")
     @PostMapping("/servers")
     public ApiResponse<ServerDTO.ServerResponse> createServer(@Valid @RequestBody ServerDTO.ServerRequest request) {
-        return ApiResponse.created(serverService.create(request));
+        ServerDTO.ServerResponse created = serverService.create(request);
+        log.info("ADMIN_SERVER_CREATED by={} serverId={} server={} price={}",
+                SecurityUtil.getCurrentUserPrincipal().getUser().getEmail(), created.getId(), created.getName(), created.getPrice());
+        return ApiResponse.created(created);
     }
 
     @Operation(summary = "Update a hosting plan")
     @PutMapping("/servers/{id}")
     public ApiResponse<ServerDTO.ServerResponse> updateServer(@PathVariable Long id,
                                                               @Valid @RequestBody ServerDTO.ServerRequest request) {
-        return ApiResponse.success(serverService.update(id, request));
+        ServerDTO.ServerResponse updated = serverService.update(id, request);
+        log.info("ADMIN_SERVER_UPDATED by={} serverId={} server={} price={}",
+                SecurityUtil.getCurrentUserPrincipal().getUser().getEmail(), id, updated.getName(), updated.getPrice());
+        return ApiResponse.success(updated);
     }
 
     @Operation(summary = "Delete a hosting plan")
     @DeleteMapping("/servers/{id}")
     public ApiResponse<Void> deleteServer(@PathVariable Long id) {
         serverService.delete(id);
+        log.info("ADMIN_SERVER_DELETED by={} serverId={}",
+                SecurityUtil.getCurrentUserPrincipal().getUser().getEmail(), id);
         return ApiResponse.noContent();
     }
 

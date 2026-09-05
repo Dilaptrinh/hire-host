@@ -88,6 +88,9 @@ public class PaymentService {
         server.setStatus(ServerStatus.RENTED);
         serverRepository.save(server);
 
+        log.info("PAYMENT_SUCCESS direct orderId={} buyerId={} buyerEmail={} server={} amount={}",
+                order.getId(), order.getUser().getId(), order.getUser().getEmail(), server.getName(), request.getAmount());
+
         return paymentMapper.toResponse(payment);
     }
 
@@ -194,8 +197,11 @@ public class PaymentService {
                 }
                 payment.setPaidAt(LocalDateTime.now());
                 paymentRepository.save(payment);
-                activateOrder(payment.getOrder());
-                log.info("PayOS payment SUCCESS orderCode: {}", orderCode);
+                Order order = payment.getOrder();
+                activateOrder(order);
+                log.info("PAYMENT_SUCCESS payos orderId={} orderCode={} buyerId={} buyerEmail={} server={} amount={}",
+                        order.getId(), orderCode, order.getUser().getId(), order.getUser().getEmail(),
+                        order.getServer().getName(), payment.getAmount());
             } else {
                 payment.setStatus(PaymentStatus.FAILED);
                 paymentRepository.save(payment);
@@ -257,6 +263,9 @@ public class PaymentService {
                 var server = order.getServer();
                 server.setStatus(ServerStatus.RENTED);
                 serverRepository.save(server);
+                log.info("PAYMENT_SUCCESS momo orderId={} transId={} buyerId={} buyerEmail={} server={} amount={}",
+                        order.getId(), params.get("transId"), order.getUser().getId(), order.getUser().getEmail(),
+                        server.getName(), payment.getAmount());
             } else {
                 log.warn("MoMo IPN: order {} already {} - not reactivated", order.getId(), order.getStatus());
             }
