@@ -3,6 +3,7 @@ package rentalhost.vn.web_rental.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.dto.UserDTO;
@@ -27,11 +28,21 @@ public class AdminService {
                 .map(userMapper::toResponse);
     }
 
-    public Page<UserDTO.UserResponse> searchUsers(String email, Pageable pageable) {
-        if (email == null || email.isBlank()) {
-            return getAllUsers(pageable);
+    public Page<UserDTO.UserResponse> searchUsers(String email, UserRole role, UserStatus status, Pageable pageable) {
+        Specification<User> spec = Specification.where(null);
+
+        if (email != null && !email.isBlank()) {
+            String like = "%" + email.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("email")), like));
         }
-        return userRepository.findByEmailContainingIgnoreCase(email.trim(), pageable)
+        if (role != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("role"), role));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+
+        return userRepository.findAll(spec, pageable)
                 .map(userMapper::toResponse);
     }
 

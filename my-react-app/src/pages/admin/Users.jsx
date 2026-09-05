@@ -14,6 +14,8 @@ export default function AdminUsers() {
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
   const [searchEmail, setSearchEmail] = useState('')
+  const [roleFilter, setRoleFilter] = useState()
+  const [statusFilter, setStatusFilter] = useState()
   const [selectedUser, setSelectedUser] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [userOrders, setUserOrders] = useState([])
@@ -25,23 +27,32 @@ export default function AdminUsers() {
   const isMobile = !screens.md
 
   useEffect(() => {
-    (async () => {
-      setLoading(true)
+    let active = true
+    setLoading(true)
+    ;(async () => {
       try {
-        const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail })
+        const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail, role: roleFilter, status: statusFilter })
+        if (!active) return
         setUsers(res.data.data.content || [])
         setTotal(res.data.data.totalElements || 0)
       } catch {
-        message.error('Không thể tải danh sách người dùng')
+        if (active) message.error('Không thể tải danh sách người dùng')
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     })()
-  }, [page, searchEmail])
+    return () => { active = false }
+  }, [page, searchEmail, roleFilter, statusFilter])
 
   const refresh = async () => {
-    const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail })
+    const res = await adminService.searchUsers({ page, size: 10, sort: 'id,desc', email: searchEmail, role: roleFilter, status: statusFilter })
     setUsers(res.data.data.content || [])
+    setTotal(res.data.data.totalElements || 0)
+  }
+
+  const handleFilterChange = (setter) => (value) => {
+    setter(value || undefined)
+    setPage(0)
   }
 
   const openUserDetail = async (record) => {
@@ -176,16 +187,41 @@ export default function AdminUsers() {
       <Title level={isMobile ? 4 : 3} style={{ color: isDark ? '#e8e8e8' : '#1a1a2e', marginBottom: 16 }}>
         <CrownOutlined /> Quản lý người dùng
       </Title>
-      <Input.Search
-        allowClear
-        placeholder="Tìm theo email..."
-        prefix={<SearchOutlined />}
-        style={{ maxWidth: 360, marginBottom: 16 }}
-        onSearch={(value) => {
-          setSearchEmail(value.trim())
-          setPage(0)
-        }}
-      />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16, alignItems: 'center' }}>
+        <Input.Search
+          allowClear
+          placeholder="Tìm theo email..."
+          prefix={<SearchOutlined />}
+          style={{ maxWidth: 360 }}
+          onSearch={(value) => {
+            setSearchEmail(value.trim())
+            setPage(0)
+          }}
+        />
+        <Select
+          allowClear
+          placeholder="Vai trò"
+          style={{ width: 150 }}
+          value={roleFilter}
+          onChange={handleFilterChange(setRoleFilter)}
+          options={[
+            { value: 'USER', label: 'Người dùng' },
+            { value: 'ADMIN', label: 'Admin' },
+            { value: 'SUPER_ADMIN', label: 'Super Admin' },
+          ]}
+        />
+        <Select
+          allowClear
+          placeholder="Trạng thái"
+          style={{ width: 150 }}
+          value={statusFilter}
+          onChange={handleFilterChange(setStatusFilter)}
+          options={[
+            { value: 'ACTIVE', label: 'Hoạt động' },
+            { value: 'BANNED', label: 'Bị khóa' },
+          ]}
+        />
+      </div>
       <Table
         columns={columns}
         dataSource={users}

@@ -6,8 +6,8 @@ const adminService = {
     return axiosClient.get('/api/v1/admin/users', { params: pageable })
   },
 
-  searchUsers({ page, size, sort, email }) {
-    return axiosClient.get('/api/v1/admin/users', { params: { page, size, sort, email } })
+  searchUsers({ page, size, sort, email, role, status }) {
+    return axiosClient.get('/api/v1/admin/users', { params: { page, size, sort, email, role, status } })
   },
 
   getUserById(id) {
