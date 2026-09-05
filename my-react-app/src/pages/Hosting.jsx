@@ -63,7 +63,7 @@ export default function Hosting() {
         </Text>
       </div>
 
-      <Row gutter={[16, 16]} justify="center" style={{ marginTop: isMobile ? 12 : 24 }}>
+      <Row gutter={[12, 16]} justify="center" style={{ marginTop: isMobile ? 12 : 24 }}>
         {servers.map((server, i) => {
           const color = colors[i % colors.length]
           const soldOut = server.quantity != null && server.remaining != null && server.remaining <= 0
@@ -75,7 +75,7 @@ export default function Hosting() {
           ]
 
           return (
-            <Col xs={24} md={8} lg={6} key={server.id}>
+            <Col xs={12} md={8} lg={6} key={server.id}>
               <Card
                 hoverable
                 styles={{ body: { padding: isMobile ? 20 : 32 } }}
