@@ -11,14 +11,13 @@ import rentalhost.vn.web_rental.enums.UserStatus;
 import rentalhost.vn.web_rental.exception.BadRequestException;
 import rentalhost.vn.web_rental.exception.DuplicateResourceException;
 import rentalhost.vn.web_rental.exception.UnauthorizedException;
-import rentalhost.vn.web_rental.model.RefreshToken;
 import rentalhost.vn.web_rental.model.User;
-import rentalhost.vn.web_rental.repository.RefreshTokenRepository;
 import rentalhost.vn.web_rental.repository.UserRepository;
 import rentalhost.vn.web_rental.security.JwtConfig;
 import rentalhost.vn.web_rental.security.JwtTokenProvider;
+import rentalhost.vn.web_rental.security.RefreshTokenStore;
 
-import java.time.Instant;
+
 import java.util.UUID;
 
 @Service
@@ -26,11 +25,10 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtConfig jwtConfig;
-
+    private final RefreshTokenStore refreshTokenStore;
     // Đăng ký bằng form thường bị tắt vì chưa có xác thực email.
     // Bật lại khi có email verification: app.registration.enabled=true
     @Value("${app.registration.enabled:false}")
@@ -84,17 +82,15 @@ public class AuthService {
         if (token == null || token.isBlank()) {
             throw new UnauthorizedException("Invalid refresh token");
         }
-        RefreshToken storedToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        Long userId = refreshTokenStore.findUserId(token);
 
-        if (storedToken.isExpired()) {
-            refreshTokenRepository.delete(storedToken);
-            throw new UnauthorizedException("Refresh token expired");
+        if (userId == null) {
+            throw new UnauthorizedException("Invalid refresh token");
         }
 
-        User user = storedToken.getUser();
-
-        refreshTokenRepository.delete(storedToken);
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new UnauthorizedException("Invalid refresh token"));
+        refreshTokenStore.delete(token , userId);
 
         return generateAuthResponse(user);
     }
@@ -126,7 +122,7 @@ public class AuthService {
 
     @Transactional
     public void logout(Long userId) {
-        refreshTokenRepository.deleteByUserId(userId);
+        refreshTokenStore.deleteAllByUserId(userId);
     }
 
     private AuthDTO.AuthResponse generateAuthResponse(User user) {
@@ -134,12 +130,7 @@ public class AuthService {
                 user.getId(), user.getEmail(), user.getRole().name());
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
-        RefreshToken tokenEntity = RefreshToken.builder()
-                .user(user)
-                .token(refreshToken)
-                .expiresAt(Instant.now().plusMillis(jwtConfig.getRefreshExpiration()))
-                .build();
-        refreshTokenRepository.saveAndFlush(tokenEntity);
+        refreshTokenStore.save(refreshToken, user.getId(), jwtConfig.getRefreshExpiration());
 
         return AuthDTO.AuthResponse.builder()
                 .accessToken(accessToken)
