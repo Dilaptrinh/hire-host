@@ -27,7 +27,7 @@ const processQueue = (error, token = null) => {
 
 axiosClient.interceptors.request.use((config) => {
   const token = getAccessToken()
-  if (token) {
+  if (token && !config._skipAuth) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config

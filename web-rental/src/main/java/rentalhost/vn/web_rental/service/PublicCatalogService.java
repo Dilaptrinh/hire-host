@@ -13,6 +13,7 @@ import rentalhost.vn.web_rental.repository.ServerRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -28,17 +29,26 @@ public class PublicCatalogService {
     private final OrderRepository orderRepository;
     private final ServerMapper serverMapper;
 
-    @Cacheable(value = "servers")
+    @Cacheable(value = "servers", sync = true)
     public List<ServerDTO.ServerResponse> availableServers() {
-        return serverRepository.findByStatus(ServerStatus.AVAILABLE).stream()
-                .map(this::toResponse)
+        List<Server> servers = serverRepository.findByStatus(ServerStatus.AVAILABLE);
+        Map<Long, Long> activeByServer = activeCountByServer();
+        return servers.stream()
+                .map(server -> toResponse(server, activeByServer))
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private ServerDTO.ServerResponse toResponse(Server server) {
+    private Map<Long, Long> activeCountByServer() {
+        return orderRepository.countByServerGroupByStatus(OrderStatus.ACTIVE).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Number) row[1]).longValue()));
+    }
+
+    private ServerDTO.ServerResponse toResponse(Server server, Map<Long, Long> activeByServer) {
         ServerDTO.ServerResponse resp = serverMapper.toResponse(server);
         if (server.getQuantity() != null) {
-            long active = orderRepository.countByServerAndStatus(server, OrderStatus.ACTIVE);
+            long active = activeByServer.getOrDefault(server.getId(), 0L);
             resp.setRemaining(Math.max(0, server.getQuantity().longValue() - active));
         }
         return resp;

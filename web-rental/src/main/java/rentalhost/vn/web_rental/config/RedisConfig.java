@@ -45,8 +45,9 @@ public class RedisConfig {
                 .entryTtl(Duration.ofMinutes(10));
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
-        // Danh sách hosting plan: thay đổi theo lượng đơn ACTIVE (remaining) -> TTL ngắn
-        cacheConfigurations.put("servers", base.entryTtl(Duration.ofSeconds(60)));
+        // Danh sách hosting plan: remaining thay đổi theo đơn ACTIVE, nhưng order đổi không evict cache
+        // (chỉ admin sửa server mới evict). TTL 5 phút để giảm số lần miss/N+1.
+        cacheConfigurations.put("servers", base.entryTtl(Duration.ofMinutes(5)));
         cacheConfigurations.put("categories", base.entryTtl(Duration.ofMinutes(30)));
         cacheConfigurations.put("announcements", base.entryTtl(Duration.ofMinutes(10)));
         cacheConfigurations.put("mySites", base.entryTtl(Duration.ofSeconds(60)));

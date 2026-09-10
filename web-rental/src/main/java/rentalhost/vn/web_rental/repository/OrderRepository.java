@@ -39,4 +39,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT o FROM Order o JOIN FETCH o.server WHERE o.status = :status AND o.endDate < :today")
     List<Order> findByStatusAndEndDateBefore(OrderStatus status, LocalDate today);
+
+    @Query("SELECT o.server.id, COUNT(o) FROM Order o WHERE o.status = :status GROUP BY o.server.id")
+    List<Object[]> countByServerGroupByStatus(OrderStatus status);
 }

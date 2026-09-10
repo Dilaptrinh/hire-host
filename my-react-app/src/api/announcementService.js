@@ -2,7 +2,7 @@ import axiosClient from './axiosClient'
 
 const announcementService = {
   getAll() {
-    return axiosClient.get('/api/v1/announcements')
+    return axiosClient.get('/api/v1/announcements', { _skipAuth: true })
   },
   getAllAdmin(pageable) {
     return axiosClient.get('/api/v1/admin/announcements', { params: pageable })
