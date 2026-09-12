@@ -135,7 +135,19 @@ export default function AdminUsers() {
 
   const columns = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
+    {
+      title: 'Email', dataIndex: 'email', key: 'email',
+      render: (email, record) => (
+        <a
+          onClick={(e) => {
+            e.stopPropagation()
+            openUserDetail(record)
+          }}
+        >
+          {email}
+        </a>
+      ),
+    },
     { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName', render: (v) => v || '--' },
     { title: 'SĐT', dataIndex: 'phone', key: 'phone', render: (v) => v || '--', responsive: ['md'] },
     {
@@ -230,10 +242,6 @@ export default function AdminUsers() {
         dataSource={users}
         rowKey="id"
         loading={loading}
-        onRow={(record) => ({
-          onClick: () => openUserDetail(record),
-          style: { cursor: 'pointer' },
-        })}
         scroll={{ x: isMobile ? 700 : undefined }}
         size={isMobile ? 'small' : 'middle'}
         pagination={total > 10 ? {
