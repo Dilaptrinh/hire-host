@@ -12,6 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 import rentalhost.vn.web_rental.dto.AnnouncementDTO;
 import rentalhost.vn.web_rental.helper.ApiResponse;
+import rentalhost.vn.web_rental.service.AnnouncementService;
 import rentalhost.vn.web_rental.service.CloudflareCacheService;
 import java.util.List;
 
