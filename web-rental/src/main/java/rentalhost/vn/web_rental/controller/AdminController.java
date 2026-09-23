@@ -17,7 +17,8 @@ import rentalhost.vn.web_rental.enums.UserRole;
 import rentalhost.vn.web_rental.enums.UserStatus;
 import rentalhost.vn.web_rental.helper.ApiResponse;
 import rentalhost.vn.web_rental.security.SecurityUtil;
-import rentalhost.vn.web_rental.service.*;
+import rentalhost.vn.web_rental.service.CloudflareCacheService;
+import java.util.List;
 
 @Tag(name = "Admin", description = "Admin & Super Admin management endpoints")
 @SecurityRequirement(name = "bearerAuth")
@@ -32,6 +33,7 @@ public class AdminController {
     private final OrderService orderService;
     private final PaymentService paymentService;
     private final AdminService adminService;
+    private final CloudflareCacheService cloudflareCacheService;
 
     @Operation(summary = "Get all servers (paginated)")
     @GetMapping("/servers")
@@ -46,6 +48,10 @@ public class AdminController {
         ServerDTO.ServerResponse created = serverService.create(request);
         log.info("ADMIN_SERVER_CREATED by={} serverId={} server={} price={}",
                 SecurityUtil.getCurrentUserPrincipal().getUser().getEmail(), created.getId(), created.getName(), created.getPrice());
+        
+        // Purge Cloudflare cache for product list endpoint
+        cloudflareCacheService.purgeCache(List.of("https://bootnode.cloud/api/v1/servers"));
+        
         return ApiResponse.created(created);
     }
 
