@@ -75,6 +75,11 @@ services:
       # Redis
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+
+      # Cloudflare Cache Purge Integration
+      CLOUDFLARE_ENABLED: ${CLOUDFLARE_ENABLED:-false}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
     volumes:
       - hosted_sites:/srv/hosted-sites
       - backend_logs:/srv/logs
