@@ -114,6 +114,24 @@ public class AdminController {
         return ApiResponse.success(paymentService.getAll(pageable));
     }
 
+    @Operation(summary = "Confirm a pending manual payment and provision the server")
+    @PostMapping("/payments/{id}/confirm")
+    public ApiResponse<PaymentDTO.PaymentResponse> confirmPayment(@PathVariable Long id) {
+        PaymentDTO.PaymentResponse confirmed = paymentService.confirm(id);
+        log.info("ADMIN_PAYMENT_CONFIRMED by={} paymentId={}",
+                SecurityUtil.getCurrentUserPrincipal().getUser().getEmail(), id);
+        return ApiResponse.success("Đã xác nhận thanh toán", confirmed);
+    }
+
+    @Operation(summary = "Reject a pending manual payment")
+    @PostMapping("/payments/{id}/reject")
+    public ApiResponse<PaymentDTO.PaymentResponse> rejectPayment(@PathVariable Long id) {
+        PaymentDTO.PaymentResponse rejected = paymentService.reject(id);
+        log.info("ADMIN_PAYMENT_REJECTED by={} paymentId={}",
+                SecurityUtil.getCurrentUserPrincipal().getUser().getEmail(), id);
+        return ApiResponse.success("Đã từ chối thanh toán", rejected);
+    }
+
     @Operation(summary = "Get all users (paginated, optional email/role/status search)")
     @GetMapping("/users")
     public ApiResponse<Page<UserDTO.UserResponse>> getAllUsers(

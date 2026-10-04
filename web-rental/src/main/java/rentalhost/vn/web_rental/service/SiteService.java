@@ -7,10 +7,13 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import rentalhost.vn.web_rental.config.DeployAccessConfig;
 import rentalhost.vn.web_rental.dto.SiteDTO;
 import rentalhost.vn.web_rental.enums.SiteSource;
 import rentalhost.vn.web_rental.enums.SiteStatus;
+import rentalhost.vn.web_rental.enums.UserRole;
 import rentalhost.vn.web_rental.exception.BadRequestException;
+import rentalhost.vn.web_rental.exception.ForbiddenException;
 import rentalhost.vn.web_rental.exception.ResourceNotFoundException;
 import rentalhost.vn.web_rental.mapper.SiteMapper;
 import rentalhost.vn.web_rental.model.Site;
@@ -30,10 +33,12 @@ public class SiteService {
     private final SiteMapper siteMapper;
     private final SiteStorageService storageService;
     private final GitHubCloneService gitHubCloneService;
+    private final DeployAccessConfig deployAccessConfig;
 
     @Transactional
     @CacheEvict(cacheNames = "mySites", allEntries = true)
     public SiteDTO.SiteResponse deployFromFolder(Long userId, String subdomain, List<MultipartFile> files) {
+        assertDeployAllowed(userId);
         Site site = getOrCreateSite(userId, subdomain);
         site.setStatus(SiteStatus.DEPLOYING);
         site.setSource(SiteSource.FOLDER);
@@ -55,6 +60,7 @@ public class SiteService {
     @Transactional
     @CacheEvict(cacheNames = "mySites", allEntries = true)
     public SiteDTO.SiteResponse deployFromGithub(Long userId, String subdomain, String githubUrl) {
+        assertDeployAllowed(userId);
         Site site = getOrCreateSite(userId, subdomain);
         site.setStatus(SiteStatus.DEPLOYING);
         site.setSource(SiteSource.GITHUB);
@@ -84,6 +90,7 @@ public class SiteService {
     @Transactional
     @CacheEvict(cacheNames = "mySites", allEntries = true)
     public SiteDTO.SiteResponse changeSubdomain(Long userId, String newSub) {
+        assertDeployAllowed(userId);
         Site site = siteRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Site", userId));
         String oldSub = site.getSubdomain();
@@ -149,6 +156,45 @@ public class SiteService {
                 .source(SiteSource.FOLDER)
                 .status(SiteStatus.DEPLOYING)
                 .build();
+    }
+
+    private void assertDeployAllowed(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        // Admin/Super Admin luôn được phép deploy
+        if (user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPER_ADMIN) {
+            return;
+        }
+
+        String email = user.getEmail();
+        if (email != null && isEmailAllowed(email)) {
+            return;
+        }
+
+        log.warn("DEPLOY_DENIED userId={} email={} - ngoai danh sach cho phep", userId, email);
+        throw new ForbiddenException("Tài khoản " + (email != null ? email : "")
+                + " không nằm trong danh sách được phép deploy. Chỉ email thuộc "
+                + String.join(", ", deployAccessConfig.getAllowedEmailDomains())
+                + " mới được deploy website.");
+    }
+
+    private boolean isEmailAllowed(String email) {
+        String normalized = email.trim().toLowerCase();
+
+        boolean matchEmail = deployAccessConfig.getAllowedEmails().stream()
+                .filter(e -> e != null && !e.isBlank())
+                .map(e -> e.trim().toLowerCase())
+                .anyMatch(normalized::equals);
+
+        if (matchEmail) {
+            return true;
+        }
+
+        return deployAccessConfig.getAllowedEmailDomains().stream()
+                .filter(d -> d != null && !d.isBlank())
+                .map(d -> d.trim().toLowerCase().replaceFirst("^@", ""))
+                .anyMatch(d -> normalized.endsWith("@" + d));
     }
 
     private String resolveSubdomain(Long userId, String requested) {

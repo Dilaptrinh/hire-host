@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Table, Tag, Typography, Grid, Spin, message } from 'antd'
+import { useCallback, useEffect, useState } from 'react'
+import { Table, Tag, Typography, Grid, Spin, message, Button, Space, Popconfirm } from 'antd'
 import { DollarOutlined } from '@ant-design/icons'
 import adminService from '../../api/adminService'
 import { useTheme } from '../../contexts/ThemeContext'
@@ -14,24 +14,49 @@ export default function AdminPayments() {
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
+  const [actingId, setActingId] = useState(null)
   const { isDark } = useTheme()
   const screens = useBreakpoint()
   const isMobile = !screens.md
 
   const formatPrice = (p) => new Intl.NumberFormat('vi-VN').format(p)
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      setLoading(true)
-      try {
-        const res = await adminService.getAllPayments({ page, size: 10, sort: ['id,desc'] })
-        setPayments(res.data.data.content || [])
-        setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
-      } catch { message.error('Không thể tải thanh toán')
-      } finally { setLoading(false) }
-    }
-    fetchPayments()
+  const fetchPayments = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await adminService.getAllPayments({ page, size: 10, sort: ['id,desc'] })
+      setPayments(res.data.data.content || [])
+      setTotal(res.data.data?.page?.totalElements ?? res.data.data?.totalElements ?? 0)
+    } catch { message.error('Không thể tải thanh toán')
+    } finally { setLoading(false) }
   }, [page])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPayments()
+  }, [fetchPayments])
+
+  const handleConfirm = async (id) => {
+    setActingId(id)
+    try {
+      await adminService.confirmPayment(id)
+      message.success('Đã xác nhận thanh toán và cấp host')
+      fetchPayments()
+    } catch (e) {
+      message.error(e.response?.data?.message || 'Xác nhận thất bại')
+    } finally { setActingId(null) }
+  }
+
+  const handleReject = async (id) => {
+    setActingId(id)
+    try {
+      await adminService.rejectPayment(id)
+      message.success('Đã từ chối thanh toán')
+      fetchPayments()
+    } catch (e) {
+      message.error(e.response?.data?.message || 'Từ chối thất bại')
+    } finally { setActingId(null) }
+  }
 
   const statusColors = { PENDING: 'gold', COMPLETED: 'green', FAILED: 'red', REFUNDED: 'blue' }
   const statusLabels = { PENDING: 'Chờ xử lý', COMPLETED: 'Hoàn tất', FAILED: 'Thất bại', REFUNDED: 'Hoàn tiền' }
@@ -44,6 +69,31 @@ export default function AdminPayments() {
     { title: 'Mã GD', dataIndex: 'transactionId', key: 'transactionId', render: (v) => v || '--', responsive: ['lg'] },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s) => <Tag color={statusColors[s] || 'default'}>{statusLabels[s] || s}</Tag> },
     { title: 'Ngày', dataIndex: 'paidAt', key: 'paidAt', render: (v) => v ? new Date(v).toLocaleDateString('vi-VN') : '--', responsive: ['md'] },
+    {
+      title: 'Thao tác',
+      key: 'actions',
+      render: (_, record) => record.status === 'PENDING' ? (
+        <Space>
+          <Popconfirm
+            title="Xác nhận đã nhận tiền và cấp host?"
+            onConfirm={() => handleConfirm(record.id)}
+            okText="Xác nhận"
+            cancelText="Hủy"
+          >
+            <Button type="primary" size="small" loading={actingId === record.id}>Xác nhận</Button>
+          </Popconfirm>
+          <Popconfirm
+            title="Từ chối giao dịch này?"
+            onConfirm={() => handleReject(record.id)}
+            okText="Từ chối"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
+            <Button danger size="small" loading={actingId === record.id}>Từ chối</Button>
+          </Popconfirm>
+        </Space>
+      ) : '--',
+    },
   ]
 
   if (loading && payments.length === 0) {

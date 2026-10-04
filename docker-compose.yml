@@ -72,6 +72,10 @@ services:
       # Static Site Hosting
       SITE_ROOT_PATH: /srv/hosted-sites
 
+      # Deploy email allowlist (admin cau hinh)
+      DEPLOY_ALLOWED_EMAIL_DOMAINS: ${DEPLOY_ALLOWED_EMAIL_DOMAINS:-student.ctu.edu.vn}
+      DEPLOY_ALLOWED_EMAILS: ${DEPLOY_ALLOWED_EMAILS:-}
+
       # Redis
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

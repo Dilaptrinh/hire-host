@@ -81,6 +81,14 @@ const adminService = {
   getAllPayments(pageable) {
     return axiosClient.get('/api/v1/admin/payments', { params: pageable })
   },
+
+  confirmPayment(id) {
+    return axiosClient.post(`/api/v1/admin/payments/${id}/confirm`)
+  },
+
+  rejectPayment(id) {
+    return axiosClient.post(`/api/v1/admin/payments/${id}/reject`)
+  },
 }
 
 export default adminService

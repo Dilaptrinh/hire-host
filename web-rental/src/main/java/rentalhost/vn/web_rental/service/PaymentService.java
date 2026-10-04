@@ -25,6 +25,7 @@ import rentalhost.vn.web_rental.repository.OrderRepository;
 import rentalhost.vn.web_rental.repository.PaymentRepository;
 import rentalhost.vn.web_rental.repository.ServerRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -63,53 +64,61 @@ public class PaymentService {
             throw new BadRequestException("Invalid payment method: " + request.getMethod());
         }
 
+        // Số tiền luôn lấy từ đơn hàng ở phía server, KHÔNG tin amount do client gửi lên.
+        BigDecimal amount = order.getTotalPrice();
+        if (amount == null || amount.signum() <= 0) {
+            throw new BadRequestException("Đơn hàng không có số tiền hợp lệ");
+        }
+        if (request.getAmount() != null && request.getAmount().compareTo(amount) != 0) {
+            log.warn("Payment amount mismatch orderId={} clientAmount={} orderAmount={} userId={}",
+                    order.getId(), request.getAmount(), amount, userId);
+            throw new BadRequestException("Số tiền thanh toán không khớp với đơn hàng");
+        }
+
         if (method == PaymentMethod.MOMO) {
-            return createMoMoPayment(order, request);
+            return createMoMoPayment(order, amount, request.getReturnUrl());
         }
 
         if (method == PaymentMethod.PAYOS) {
-            return createPayOSPayment(order, request);
+            return createPayOSPayment(order, amount);
         }
 
+        // Các phương thức thủ công (BANKING, VNPAY, CASH): chỉ ghi nhận giao dịch PENDING.
+        // KHÔNG tự duyệt và KHÔNG cấp host - admin phải xác nhận thủ công.
         Payment payment = Payment.builder()
                 .order(order)
-                .amount(request.getAmount())
+                .amount(amount)
                 .method(method)
-                .status(PaymentStatus.SUCCESS)
+                .status(PaymentStatus.PENDING)
                 .transactionId(UUID.randomUUID().toString())
-                .paidAt(LocalDateTime.now())
+                .gateway(method.name())
+                .orderInfo("Thanh toan thu cong - don #" + order.getId())
                 .build();
         payment = paymentRepository.save(payment);
 
-        order.setStatus(OrderStatus.ACTIVE);
-        orderRepository.save(order);
-
-        var server = order.getServer();
-        server.setStatus(ServerStatus.RENTED);
-        serverRepository.save(server);
-
-        log.info("PAYMENT_SUCCESS direct orderId={} buyerId={} buyerEmail={} server={} amount={}",
-                order.getId(), order.getUser().getId(), order.getUser().getEmail(), server.getName(), request.getAmount());
+        log.info("PAYMENT_PENDING method={} orderId={} buyerId={} buyerEmail={} server={} amount={} - cho admin xac nhan",
+                method, order.getId(), order.getUser().getId(), order.getUser().getEmail(),
+                order.getServer().getName(), amount);
 
         return paymentMapper.toResponse(payment);
     }
 
     @Transactional
-    protected PaymentDTO.PaymentResponse createMoMoPayment(Order order, PaymentDTO.PaymentRequest request) {
+    protected PaymentDTO.PaymentResponse createMoMoPayment(Order order, BigDecimal amount, String returnUrl) {
         String requestId = UUID.randomUUID().toString();
         String orderId = "ORDER_" + order.getId() + "_" + System.currentTimeMillis();
         String orderInfo = "Thanh toan thue server #" + order.getId();
 
-        String returnUrl = request.getReturnUrl() != null
-                ? request.getReturnUrl()
+        String resolvedReturnUrl = returnUrl != null
+                ? returnUrl
                 : paymentConfig.getMomo().getReturnUrl();
 
         MoMoPaymentGateway.MomoCreatePaymentResponse momoResponse = moMoPaymentGateway.createPayment(
                 orderId,
                 requestId,
-                request.getAmount(),
+                amount,
                 orderInfo,
-                returnUrl,
+                resolvedReturnUrl,
                 paymentConfig.getMomo().getNotifyUrl()
         );
 
@@ -119,7 +128,7 @@ public class PaymentService {
 
         Payment payment = Payment.builder()
                 .order(order)
-                .amount(request.getAmount())
+                .amount(amount)
                 .method(PaymentMethod.MOMO)
                 .status(PaymentStatus.PENDING)
                 .transactionId(orderId)
@@ -136,18 +145,18 @@ public class PaymentService {
     }
 
     @Transactional
-    protected PaymentDTO.PaymentResponse createPayOSPayment(Order order, PaymentDTO.PaymentRequest request) {
+    protected PaymentDTO.PaymentResponse createPayOSPayment(Order order, BigDecimal amount) {
         PaymentConfig.PayOSConfig config = paymentConfig.getPayos();
-        long amount = request.getAmount().longValue();
+        long amountValue = amount.longValue();
         long orderCode = 1000000000000L + Math.abs(UUID.randomUUID().hashCode());
         String description = "Thanh toan thue server #" + order.getId();
 
         PayOSPaymentGateway.PayOSData payosData = payOSPaymentGateway.createPayment(
-                orderCode, amount, description, config.getReturnUrl(), config.getCancelUrl());
+                orderCode, amountValue, description, config.getReturnUrl(), config.getCancelUrl());
 
         Payment payment = Payment.builder()
                 .order(order)
-                .amount(request.getAmount())
+                .amount(amount)
                 .method(PaymentMethod.PAYOS)
                 .status(PaymentStatus.PENDING)
                 .transactionId(payosData.getOrderCode() != null
@@ -221,6 +230,55 @@ public class PaymentService {
         }
         order.setStatus(OrderStatus.ACTIVE);
         orderRepository.save(order);
+
+        var server = order.getServer();
+        if (server != null) {
+            server.setStatus(ServerStatus.RENTED);
+            serverRepository.save(server);
+        }
+    }
+
+    @Transactional
+    public PaymentDTO.PaymentResponse confirm(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
+
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            return paymentMapper.toResponse(payment);
+        }
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new BadRequestException("Chỉ có thể xác nhận giao dịch đang chờ xử lý");
+        }
+
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setPaidAt(LocalDateTime.now());
+        paymentRepository.save(payment);
+
+        Order order = payment.getOrder();
+        activateOrder(order);
+
+        log.info("PAYMENT_SUCCESS manual-confirm paymentId={} orderId={} buyerId={} buyerEmail={} server={} amount={}",
+                payment.getId(), order.getId(), order.getUser().getId(), order.getUser().getEmail(),
+                order.getServer() != null ? order.getServer().getName() : null, payment.getAmount());
+
+        return paymentMapper.toResponse(payment);
+    }
+
+    @Transactional
+    public PaymentDTO.PaymentResponse reject(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
+
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new BadRequestException("Chỉ có thể từ chối giao dịch đang chờ xử lý");
+        }
+
+        payment.setStatus(PaymentStatus.FAILED);
+        paymentRepository.save(payment);
+
+        log.info("PAYMENT_REJECTED paymentId={} orderId={}", payment.getId(), payment.getOrder().getId());
+
+        return paymentMapper.toResponse(payment);
     }
 
     @Transactional
