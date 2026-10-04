@@ -53,6 +53,10 @@ public class PaymentService {
             throw new BadRequestException("Order does not belong to user");
         }
 
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Đơn hàng không còn ở trạng thái chờ thanh toán");
+        }
+
         if (paymentRepository.findByOrderAndStatus(order, PaymentStatus.SUCCESS).isPresent()) {
             throw new BadRequestException("Order already paid");
         }
@@ -73,6 +77,15 @@ public class PaymentService {
             log.warn("Payment amount mismatch orderId={} clientAmount={} orderAmount={} userId={}",
                     order.getId(), request.getAmount(), amount, userId);
             throw new BadRequestException("Số tiền thanh toán không khớp với đơn hàng");
+        }
+
+        // Mỗi đơn chỉ giữ tối đa 1 giao dịch chờ xử lý: hủy các giao dịch PENDING cũ
+        // (link thanh toán cũ không còn hiệu lực) để tránh xác nhận trùng / trừ tiền 2 lần.
+        for (Payment old : paymentRepository.findByOrderOrderByCreatedAtDesc(order)) {
+            if (old.getStatus() == PaymentStatus.PENDING) {
+                old.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(old);
+            }
         }
 
         if (method == PaymentMethod.MOMO) {
@@ -195,7 +208,9 @@ public class PaymentService {
                 log.warn("PayOS payment not found for orderCode: {}", orderCode);
                 return "{\"error\":\"Not found\"}";
             }
-            if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            if (payment.getStatus() != PaymentStatus.PENDING) {
+                log.info("PayOS webhook: payment {} status={} - bỏ qua (đã xử lý hoặc đã bị hủy)",
+                        payment.getId(), payment.getStatus());
                 return "{\"success\":true}";
             }
             // PayOS báo thanh toán thành công khi code == "00"
@@ -207,6 +222,10 @@ public class PaymentService {
                 payment.setPaidAt(LocalDateTime.now());
                 paymentRepository.save(payment);
                 Order order = payment.getOrder();
+                if (order.getStatus() != OrderStatus.PENDING) {
+                    log.warn("PAYMENT_SUCCESS nhung don {} status={} - can xu ly hoan tien (khong cap host)",
+                            order.getId(), order.getStatus());
+                }
                 activateOrder(order);
                 log.info("PAYMENT_SUCCESS payos orderId={} orderCode={} buyerId={} buyerEmail={} server={} amount={}",
                         order.getId(), orderCode, order.getUser().getId(), order.getUser().getEmail(),
@@ -240,7 +259,7 @@ public class PaymentService {
 
     @Transactional
     public PaymentDTO.PaymentResponse confirm(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment payment = paymentRepository.findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
 
         if (payment.getStatus() == PaymentStatus.SUCCESS) {
@@ -250,11 +269,22 @@ public class PaymentService {
             throw new BadRequestException("Chỉ có thể xác nhận giao dịch đang chờ xử lý");
         }
 
+        // Khóa đơn hàng để tránh 2 admin xác nhận đồng thời gây trừ tiền/cấp host trùng
+        Long orderId = payment.getOrder().getId();
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", orderId));
+
+        if (paymentRepository.findByOrderAndStatus(order, PaymentStatus.SUCCESS).isPresent()) {
+            throw new BadRequestException("Đơn hàng đã được thanh toán");
+        }
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BadRequestException("Đơn hàng không còn ở trạng thái chờ thanh toán");
+        }
+
         payment.setStatus(PaymentStatus.SUCCESS);
         payment.setPaidAt(LocalDateTime.now());
         paymentRepository.save(payment);
 
-        Order order = payment.getOrder();
         activateOrder(order);
 
         log.info("PAYMENT_SUCCESS manual-confirm paymentId={} orderId={} buyerId={} buyerEmail={} server={} amount={}",
@@ -266,7 +296,7 @@ public class PaymentService {
 
     @Transactional
     public PaymentDTO.PaymentResponse reject(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId)
+        Payment payment = paymentRepository.findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
 
         if (payment.getStatus() != PaymentStatus.PENDING) {
@@ -314,19 +344,14 @@ public class PaymentService {
             paymentRepository.save(payment);
 
             Order order = payment.getOrder();
-            if (order.getStatus() == OrderStatus.PENDING) {
-                order.setStatus(OrderStatus.ACTIVE);
-                orderRepository.save(order);
-
-                var server = order.getServer();
-                server.setStatus(ServerStatus.RENTED);
-                serverRepository.save(server);
-                log.info("PAYMENT_SUCCESS momo orderId={} transId={} buyerId={} buyerEmail={} server={} amount={}",
-                        order.getId(), params.get("transId"), order.getUser().getId(), order.getUser().getEmail(),
-                        server.getName(), payment.getAmount());
-            } else {
-                log.warn("MoMo IPN: order {} already {} - not reactivated", order.getId(), order.getStatus());
+            if (order.getStatus() != OrderStatus.PENDING) {
+                log.warn("PAYMENT_SUCCESS nhung don {} status={} - can xu ly hoan tien (khong cap host)",
+                        order.getId(), order.getStatus());
             }
+            activateOrder(order);
+            log.info("PAYMENT_SUCCESS momo orderId={} transId={} buyerId={} buyerEmail={} server={} amount={}",
+                    order.getId(), params.get("transId"), order.getUser().getId(), order.getUser().getEmail(),
+                    order.getServer() != null ? order.getServer().getName() : null, payment.getAmount());
 
             log.info("Payment SUCCESS for orderId: {}", params.get("orderId"));
             return "{\"RspCode\":\"00\",\"Message\":\"Success\"}";

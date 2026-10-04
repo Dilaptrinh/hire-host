@@ -167,6 +167,11 @@ public class SiteService {
             return;
         }
 
+        // Giữ quyền cho chủ site đã tồn tại (grandfather) để không làm hỏng website đang chạy
+        if (siteRepository.findByUserId(userId).isPresent()) {
+            return;
+        }
+
         String email = user.getEmail();
         if (email != null && isEmailAllowed(email)) {
             return;

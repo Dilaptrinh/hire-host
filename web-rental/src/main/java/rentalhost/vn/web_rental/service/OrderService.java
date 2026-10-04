@@ -8,15 +8,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rentalhost.vn.web_rental.dto.OrderDTO;
 import rentalhost.vn.web_rental.enums.OrderStatus;
+import rentalhost.vn.web_rental.enums.PaymentStatus;
 import rentalhost.vn.web_rental.enums.ServerStatus;
 import rentalhost.vn.web_rental.exception.BadRequestException;
 import rentalhost.vn.web_rental.exception.ForbiddenException;
 import rentalhost.vn.web_rental.exception.ResourceNotFoundException;
 import rentalhost.vn.web_rental.mapper.OrderMapper;
 import rentalhost.vn.web_rental.model.Order;
+import rentalhost.vn.web_rental.model.Payment;
 import rentalhost.vn.web_rental.model.Server;
 import rentalhost.vn.web_rental.model.User;
 import rentalhost.vn.web_rental.repository.OrderRepository;
+import rentalhost.vn.web_rental.repository.PaymentRepository;
 import rentalhost.vn.web_rental.repository.ServerRepository;
 import rentalhost.vn.web_rental.repository.UserRepository;
 
@@ -32,6 +35,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ServerRepository serverRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
     private final OrderMapper orderMapper;
 
     @Transactional
@@ -123,6 +127,16 @@ public class OrderService {
         }
         order.setStatus(OrderStatus.CANCELLED);
         order = orderRepository.save(order);
+
+        // Đơn đã hủy thì mọi giao dịch đang chờ của đơn không còn hiệu lực
+        for (Payment payment : paymentRepository.findByOrderOrderByCreatedAtDesc(order)) {
+            if (payment.getStatus() == PaymentStatus.PENDING) {
+                payment.setStatus(PaymentStatus.FAILED);
+                paymentRepository.save(payment);
+            }
+        }
+
+        log.info("ORDER_CANCELLED orderId={} buyerId={}", order.getId(), userId);
 
         return orderMapper.toResponse(order);
     }

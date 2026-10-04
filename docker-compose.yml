@@ -76,6 +76,9 @@ services:
       DEPLOY_ALLOWED_EMAIL_DOMAINS: ${DEPLOY_ALLOWED_EMAIL_DOMAINS:-student.ctu.edu.vn}
       DEPLOY_ALLOWED_EMAILS: ${DEPLOY_ALLOWED_EMAILS:-}
 
+      # Manual payment approve window (minutes)
+      MANUAL_PENDING_TIMEOUT_MINUTES: ${MANUAL_PENDING_TIMEOUT_MINUTES:-1440}
+
       # Redis
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
